@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>手机厂商出海投放资源推荐器</title>
+<title>海外增长渠道资源推荐</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background: #f5f7fa; color: #1a1a2e; min-height: 100vh; }
@@ -24,7 +24,7 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
 .region-group { margin-top: 4px; }
 .region-tag { padding: 7px 14px; border-radius: 16px; border: 1.5px solid #ddd; font-size: 13px; background: #fff; color: #555; cursor: pointer; transition: all .2s; margin: 3px; user-select: none; -webkit-tap-highlight-color: transparent; }
 .region-tag:active { transform: scale(.96); }
-.region-tag.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+.region-tag.active { background: #1a5276; color: #fff; border-color: #1a5276; }
 .input-group { margin-bottom: 10px; }
 .input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
 .input-group input { width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; transition: border .2s; }
@@ -41,6 +41,7 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
 .match-high { background: #27ae60; }
 .match-medium { background: #f39c12; }
 .match-low { background: #95a5a6; }
+.match-top { background: #8e44ad; }
 .result-body { padding: 14px 18px; }
 .result-section-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; margin-top: 12px; }
 .result-section-title:first-child { margin-top: 0; }
@@ -49,29 +50,42 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
 .placement-item:last-child { border-bottom: none; }
 .placement-name { color: #333; font-weight: 500; }
 .placement-score { color: #f39c12; font-size: 12px; }
-.cost-row { display: flex; gap: 12px; }
-.cost-box { flex: 1; text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px; }
+.cost-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.cost-box { flex: 1; min-width: 80px; text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px; }
 .cost-box .label { font-size: 11px; color: #888; }
 .cost-box .value { font-size: 18px; font-weight: 700; color: #0f3460; margin-top: 2px; }
 .cost-box .sub { font-size: 11px; color: #999; }
 .advice-box { background: #eaf4fe; border-radius: 10px; padding: 12px; font-size: 13px; color: #1a5276; line-height: 1.7; margin-top: 10px; }
 .advice-box strong { color: #0f3460; }
-.no-result { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
 .footer-note { text-align: center; font-size: 11px; color: #aaa; padding: 20px 0; }
 .country-sub-select { margin-top: 8px; display: none; }
 .country-sub-select.show { display: block; }
 .country-sub-tag { padding: 5px 10px; border-radius: 12px; border: 1px solid #ddd; font-size: 12px; background: #fff; color: #555; cursor: pointer; margin: 2px; }
 .country-sub-tag.active { background: #1a5276; color: #fff; border-color: #1a5276; }
-.loading { text-align: center; padding: 30px; }
-.loading .spinner { width: 32px; height: 32px; border: 3px solid #f0f0f0; border-top-color: #0f3460; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
-@keyframes spin { to { transform: rotate(360deg); } }
+.tier-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: 8px; margin-left: 6px; font-weight: 600; }
+.tier-S { background:#ffd700; color:#333; }
+.tier-A { background:#a8e6cf; color:#1a5c3a; }
+.tier-B { background:#bbdefb; color:#0d47a1; }
+.tier-C { background:#e0e0e0; color:#555; }
+.channel-type-tag { padding: 6px 12px; border-radius: 16px; border: 1.5px solid #ddd; font-size: 12px; background: #fff; color: #555; cursor: pointer; }
+.channel-type-tag.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+.channel-type-tag.active-mfg { background: #e74c3c; color: #fff; border-color: #e74c3c; }
+.channel-type-tag.active-social { background: #3498db; color: #fff; border-color: #3498db; }
+.channel-type-tag.active-all { background: #8e44ad; color: #fff; border-color: #8e44ad; }
+.summary-box { background: #fff; border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 4px solid #0f3460; }
+.summary-box.total { border-left-color: #27ae60; }
+.summary-row { display: flex; gap: 12px; margin-top: 10px; }
+.summary-item { flex: 1; text-align: center; }
+.summary-item .num { font-size: 22px; font-weight: 700; color: #0f3460; }
+.summary-item .lbl { font-size: 11px; color: #888; margin-top: 2px; }
+.switch-group { display: flex; gap: 6px; flex-wrap: wrap; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>📱 厂商投放资源推荐器</h1>
-  <p>基于2025全年及2026Q1数据，快速匹配最优投放方案</p>
+  <h1>🌐 海外增长渠道资源推荐</h1>
+  <p>厂商渠道+社交媒体渠道 · 多因子算法预算分配 · 分国家T度</p>
 </div>
 
 <div class="container">
@@ -88,7 +102,7 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
 
   <!-- 国家/地区选择 -->
   <div class="card">
-    <div class="card-title">🌍 选择投放国家/地区</div>
+    <div class="card-title">🌍 选择投放国家/地区 <span id="tierDisplay" style="font-size:12px;font-weight:400;color:#888;"></span></div>
     <div class="tag-group region-group" id="regionGroup">
       <span class="region-tag" data-region="india" onclick="selectRegion(this)">IND 印度</span>
       <span class="region-tag" data-region="seasia" onclick="selectRegion(this)">SEA 东南亚</span>
@@ -100,10 +114,19 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
       <span class="region-tag" data-region="australia" onclick="selectRegion(this)">AUS 澳洲</span>
       <span class="region-tag" data-region="canada" onclick="selectRegion(this)">CA 加拿大</span>
     </div>
-    <!-- 国家子选项 -->
     <div class="country-sub-select" id="countrySubSelect">
       <div style="font-size:13px;color:#666;margin-bottom:6px;">选择具体国家：</div>
       <div class="tag-group" id="subCountryTags"></div>
+    </div>
+  </div>
+
+  <!-- 渠道类型 -->
+  <div class="card">
+    <div class="card-title">📡 渠道类型</div>
+    <div class="tag-group" id="channelTypeGroup">
+      <span class="channel-type-tag" data-channel="all" onclick="selectChannelType(this)">🌐 全部渠道</span>
+      <span class="channel-type-tag" data-channel="mfg" onclick="selectChannelType(this)">📱 厂商渠道</span>
+      <span class="channel-type-tag" data-channel="social" onclick="selectChannelType(this)">📣 海外社交媒体</span>
     </div>
   </div>
 
@@ -123,7 +146,7 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
     <div class="input-group">
       <label>总预算</label>
       <input type="text" id="budget" placeholder="例如: 10000（美元）" value="">
-      <div class="input-hint">总预算（美元），系统会按品牌匹配度自动分配预算</div>
+      <div class="input-hint">总预算（美元），系统会按多因子算法自动分配到各渠道</div>
     </div>
   </div>
 
@@ -131,25 +154,41 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
 
   <!-- 结果区 -->
   <div class="result-section" id="resultSection">
-    <div style="font-size:14px;font-weight:600;color:#1a1a2e;margin:20px 0 10px;display:flex;align-items:center;gap:6px;">
-      📊 推荐方案 <span id="resultMeta" style="font-size:12px;font-weight:400;color:#888;"></span>
-    </div>
+    <div id="resultMetaBlock"></div>
+    <div id="resultSummary"></div>
     <div id="resultContent"></div>
-    <div class="footer-note">数据来源：各品牌商业化平台公开信息 · 成本为行业参考区间</div>
+    <div class="footer-note">数据来源：各品牌商业化平台 · 社交媒体行业公开数据 · 成本为行业参考区间</div>
   </div>
 </div>
 
 <script>
-// ==================== 核心数据 ====================
-const BRANDS = {
-  xiaomi: { name: '小米', platform: 'Mi Ads / 澎湃OS广告平台', icon: '🔴' },
-  oppo: { name: 'OPPO', platform: 'OPPO Ads / Oplus营销平台', icon: '🟢' },
-  vivo: { name: 'vivo', platform: 'vivo营销平台', icon: '🔵' },
-  transsion: { name: '传音', platform: 'Transsion Ads', icon: '🟣' },
-  honor: { name: '荣耀', platform: 'HONOR Ads', icon: '⚪' },
-  huawei: { name: '华为', platform: '华为Ads / HMS生态', icon: '🔶' },
+// ==================== 国家T度定义 ====================
+const COUNTRY_TIERS = {
+  india: 'S', seasia: 'S', 'middle-east': 'A', africa: 'A', 'latin-america': 'A', europe: 'B', usa: 'C', australia: 'C', canada: 'C'
 };
+const TIER_LABELS = { S: 'S级-核心市场', A: 'A级-增量市场', B: 'B级-潜力市场', C: 'C级-观察市场' };
+const TIER_COLORS = { S: '#ffd700', A: '#a8e6cf', B: '#bbdefb', C: '#e0e0e0' };
 
+// ==================== 厂商渠道数据 ====================
+const BRANDS = {
+  xiaomi: { name: '小米', platform: 'Mi Ads / 澎湃OS广告平台', icon: '🔴', type: 'mfg' },
+  oppo: { name: 'OPPO', platform: 'OPPO Ads / Oplus营销平台', icon: '🟢', type: 'mfg' },
+  vivo: { name: 'vivo', platform: 'vivo营销平台', icon: '🔵', type: 'mfg' },
+  transsion: { name: '传音', platform: 'Transsion Ads', icon: '🟣', type: 'mfg' },
+  honor: { name: '荣耀', platform: 'HONOR Ads', icon: '⚪', type: 'mfg' },
+  huawei: { name: '华为', platform: '华为Ads / HMS生态', icon: '🔶', type: 'mfg' },
+};
+const SOCIAL_BRANDS = {
+  google: { name: 'Google', platform: 'Google Ads (Search+Display+YouTube)', icon: '🔍', type: 'social' },
+  meta: { name: 'Meta', platform: 'Meta Ads (Facebook+Instagram)', icon: '📘', type: 'social' },
+  tiktok: { name: 'TikTok', platform: 'TikTok Ads', icon: '🎵', type: 'social' },
+  twitter: { name: 'Twitter/X', platform: 'X Ads', icon: '🐦', type: 'social' },
+  linkedin: { name: 'LinkedIn', platform: 'LinkedIn Ads', icon: '💼', type: 'social' },
+  snapchat: { name: 'Snapchat', platform: 'Snap Ads', icon: '👻', type: 'social' },
+};
+const ALL_BRANDS = { ...BRANDS, ...SOCIAL_BRANDS };
+
+// ==================== 厂商版位数据 ====================
 const PLACEMENTS = {
   xiaomi: [
     { name: '应用商店(GetApps) - 搜索广告', score: 5, desc: 'App下载、游戏分发' },
@@ -158,8 +197,6 @@ const PLACEMENTS = {
     { name: '小米视频 - 前贴片/信息流', score: 4, desc: '视频内容推广' },
     { name: '锁屏/通知栏 - 系统级推送', score: 4, desc: '强曝光、促活' },
     { name: '米盟(广告联盟)', score: 4, desc: '矩阵App流量补充' },
-    { name: '小米音乐 - 开屏/插屏', score: 3, desc: '泛娱乐用户触达' },
-    { name: '小米社区 - 信息流/Banner', score: 3, desc: '品牌粉丝运营' },
   ],
   oppo: [
     { name: '软件商店 - 推荐/搜索/Banner', score: 5, desc: 'App下载、游戏' },
@@ -167,7 +204,6 @@ const PLACEMENTS = {
     { name: '视频 - 前贴片/信息流', score: 4, desc: '内容推广' },
     { name: '锁屏/杂志锁屏', score: 4, desc: '品牌曝光' },
     { name: 'OPPO广告联盟', score: 4, desc: '流量补充' },
-    { name: '主题商店 - Banner', score: 3, desc: '年轻用户触达' },
   ],
   vivo: [
     { name: '应用商店 - 推荐/搜索', score: 5, desc: 'App分发' },
@@ -175,7 +211,6 @@ const PLACEMENTS = {
     { name: 'Jovi智慧场景 - 场景化卡片', score: 4, desc: 'LBS/本地服务' },
     { name: '锁屏/日历/天气 - 系统级', score: 4, desc: '强曝光' },
     { name: 'vivo广告联盟', score: 4, desc: '流量补充' },
-    { name: '视频/音乐/阅读 - 内容联动', score: 4, desc: '内容推广' },
   ],
   transsion: [
     { name: 'PalmStore - 推荐/搜索/Banner', score: 5, desc: 'App下载' },
@@ -188,22 +223,164 @@ const PLACEMENTS = {
     { name: '应用商店 - 推荐/搜索', score: 4, desc: 'App分发' },
     { name: '浏览器 - 信息流', score: 4, desc: '品牌曝光' },
     { name: 'MagicOS系统级 - 通知栏/负一屏', score: 4, desc: '强曝光' },
-    { name: '视频/音乐 - 前贴片/信息流', score: 3, desc: '内容推广' },
   ],
   huawei: [
     { name: 'AppGallery - 推荐/搜索/Banner', score: 5, desc: 'App下载' },
     { name: '锁屏/通知栏 - 系统级', score: 5, desc: '强曝光' },
     { name: '浏览器 - 信息流/搜索', score: 4, desc: '品牌曝光' },
     { name: '华为视频/音乐 - 前贴片', score: 4, desc: '内容推广' },
-    { name: 'Push推送', score: 4, desc: '促活' },
     { name: '华为广告联盟', score: 4, desc: '流量补充' },
+  ],
+  google: [
+    { name: 'Google搜索广告', score: 5, desc: '精准意图捕获' },
+    { name: 'Google Display Network', score: 4, desc: '展示网络广泛覆盖' },
+    { name: 'YouTube广告(前贴片/发现)', score: 5, desc: '视频品牌曝光' },
+  ],
+  meta: [
+    { name: 'Facebook信息流广告', score: 5, desc: '社交精准定向' },
+    { name: 'Instagram Feed/Story', score: 5, desc: '年轻用户视觉广告' },
+    { name: 'Meta Audience Network', score: 4, desc: '应用内流量补充' },
+    { name: 'Messenger广告', score: 3, desc: '对话式触达' },
+  ],
+  tiktok: [
+    { name: 'TikTok信息流广告(Feed)', score: 5, desc: '沉浸式短视频' },
+    { name: 'TikTok Spark Ads', score: 4, desc: '原生达人合作' },
+    { name: 'TikTok Brand Takeover', score: 3, desc: '开屏强曝光' },
+  ],
+  twitter: [
+    { name: 'Twitter推广推文', score: 4, desc: '话题互动曝光' },
+    { name: 'Twitter Trend Takeover', score: 3, desc: '热搜话题占据' },
+  ],
+  linkedin: [
+    { name: 'LinkedIn Sponsored Content', score: 4, desc: '职场人群定向' },
+    { name: 'LinkedIn Message Ads', score: 3, desc: '私信精准触达' },
+  ],
+  snapchat: [
+    { name: 'Snapchat Story Ads', score: 4, desc: '全屏竖屏广告' },
+    { name: 'Snapchat Filter/Lens', score: 3, desc: 'AR互动曝光' },
   ],
 };
 
-// 各品牌×区域 市场份额排名与匹配度
+// ==================== 社交媒体各区域数据 ====================
+const SOCIAL_REGION_DATA = {
+  india: {
+    coverage: '极高', note: '印度是Facebook/Google最大市场之一，TikTok被禁但在竞争对手中',
+    google: { share: '90%+搜索份额', rank: '搜索引擎垄断', match: 'top', desc: 'Google Play分发+搜索精准获客' },
+    meta: { share: '3.5亿+用户', rank: '社交第1', match: 'top', desc: 'WhatsApp+FB+IG全矩阵' },
+    tiktok: { share: '-', rank: '已封禁', match: 'low', desc: '印度政府禁用TikTok' },
+    twitter: { share: '中等', rank: '影响力平台', match: 'medium', desc: '话题讨论活跃' },
+    linkedin: { share: '职场', rank: 'B2B首选', match: 'medium', desc: '白领招聘场景' },
+    snapchat: { share: '年轻用户', rank: '覆盖有限', match: 'low', desc: '一二线年轻人使用' },
+    bizFocus: { recruitment: 'linkedin', rental: 'meta', '2nd-ecom': 'meta', '2nd-car': 'google' },
+  },
+  seasia: {
+    coverage: '极高', note: '东南亚社交媒体渗透率极高，TikTok增长最快',
+    google: { share: '90%+搜索份额', rank: '搜索引擎垄断', match: 'top', desc: '东南亚数字广告最大平台' },
+    meta: { share: '2.5亿+用户', rank: '社交第1', match: 'top', desc: 'FB/IG全区域渗透' },
+    tiktok: { share: '极高增长', rank: '短视频第1', match: 'top', desc: '印尼/泰国/菲律宾最活跃' },
+    twitter: { share: '中等', rank: '新闻舆论', match: 'medium', desc: '泰国/印尼较活跃' },
+    linkedin: { share: '职场', rank: 'B2B渠道', match: 'medium', desc: '新加坡/吉隆坡覆盖好' },
+    snapchat: { share: '低', rank: '有限', match: 'low', desc: '越南印尼年轻用户' },
+    bizFocus: { recruitment: 'meta', rental: 'meta', '2nd-ecom': 'tiktok', '2nd-car': 'google' },
+  },
+  africa: {
+    coverage: '高增长', note: '非洲移动互联网爆发，Facebook是核心渠道',
+    google: { share: '搜索主导', rank: '数字广告基础', match: 'top', desc: '非洲数字广告基础设施' },
+    meta: { share: '2亿+用户', rank: '社交第1', match: 'top', desc: 'FB是最常用社交网络' },
+    tiktok: { share: '快速增长', rank: '视频新贵', match: 'medium', desc: '尼日利亚/南非增长快' },
+    twitter: { share: '中等', rank: '舆论平台', match: 'medium', desc: '尼日利亚活跃度高' },
+    linkedin: { share: '有限', rank: 'B2B渠道', match: 'low', desc: '仅南非/肯尼亚有覆盖' },
+    snapchat: { share: '低', rank: '有限', match: 'low', desc: '南非年轻用户' },
+    bizFocus: { recruitment: 'meta', rental: 'meta', '2nd-ecom': 'meta', '2nd-car': 'google' },
+  },
+  'middle-east': {
+    coverage: '高渗透', note: '海湾国家社交媒体渗透率极高，Snapchat在中东独特领先',
+    google: { share: '搜索主导', rank: '数字广告基础', match: 'top', desc: 'GCC国家搜索广告核心' },
+    meta: { share: '高渗透', rank: '社交主流', match: 'top', desc: 'FB/IG在阿联酋沙特强势' },
+    tiktok: { share: '快速增长', rank: '年轻人首选', match: 'medium', desc: '沙特/阿联酋年轻用户多' },
+    twitter: { share: '极高', rank: '舆论中心', match: 'high', desc: '中东是Twitter全球核心市场之一' },
+    linkedin: { share: '职场', rank: 'B2B渠道', match: 'medium', desc: '迪拜/利雅得职场人群' },
+    snapchat: { share: '极高', rank: '中东王者', match: 'high', desc: 'Snapchat在中东是第1社交平台' },
+    bizFocus: { recruitment: 'linkedin', rental: 'snapchat', '2nd-ecom': 'google', '2nd-car': 'twitter' },
+  },
+  'latin-america': {
+    coverage: '高渗透', note: '拉美社交媒体使用时长全球领先',
+    google: { share: '搜索主导', rank: '数字广告基础', match: 'top', desc: '巴西/墨西哥搜索核心' },
+    meta: { share: '极高', rank: '社交第1', match: 'top', desc: 'WhatsApp在巴西渗透率超过95%' },
+    tiktok: { share: '极高增长', rank: '增长最快', match: 'high', desc: '巴西是TikTok全球前5市场' },
+    twitter: { share: '中等', rank: '新闻舆论', match: 'medium', desc: '巴西/阿根廷活跃' },
+    linkedin: { share: '职场', rank: 'B2B渠道', match: 'medium', desc: '大城市职场覆盖' },
+    snapchat: { share: '中等', rank: '年轻群体', match: 'medium', desc: '巴西/墨西哥年轻用户' },
+    bizFocus: { recruitment: 'meta', rental: 'meta', '2nd-ecom': 'tiktok', '2nd-car': 'google' },
+  },
+  europe: {
+    coverage: '高渗透', note: '欧洲数据隐私法规严格（GDPR），但数字广告市场成熟',
+    google: { share: '搜索主导', rank: '第1数字平台', match: 'top', desc: '欧洲数字广告最大玩家' },
+    meta: { share: '高渗透', rank: '社交第1', match: 'top', desc: 'FB/IG覆盖全欧洲' },
+    tiktok: { share: '高', rank: '年轻人垄断', match: 'high', desc: '欧洲年轻用户日活极高' },
+    twitter: { share: '中等', rank: '舆论平台', match: 'medium', desc: '英国/德国政治舆论' },
+    linkedin: { share: '极高', rank: '职场B2B核心', match: 'high', desc: 'LinkedIn在欧洲最强' },
+    snapchat: { share: '中等', rank: '年轻群体', match: 'medium', desc: '英国/法国/荷兰年轻用户' },
+    bizFocus: { recruitment: 'linkedin', rental: 'meta', '2nd-ecom': 'google', '2nd-car': 'google' },
+  },
+  usa: {
+    coverage: '极高', note: '美国全球最大广告市场，社交媒体平台多元',
+    google: { share: '搜索主导', rank: '第1广告平台', match: 'top', desc: '美国数字广告份额最大' },
+    meta: { share: '极高', rank: '社交第1', match: 'top', desc: 'FB/IG覆盖全美用户' },
+    tiktok: { share: '极高', rank: '短视频第1', match: 'high', desc: '美国月活1.5亿+' },
+    twitter: { share: '高', rank: '舆论中心', match: 'medium', desc: '政治/科技圈活跃' },
+    linkedin: { share: '极高', rank: '职场B2B核心', match: 'high', desc: 'LinkedIn总部美国' },
+    snapchat: { share: '高', rank: '年轻人首选', match: 'high', desc: 'Z世代核心平台' },
+    bizFocus: { recruitment: 'linkedin', rental: 'meta', '2nd-ecom': 'google', '2nd-car': 'google' },
+  },
+  australia: {
+    coverage: '高', note: '澳洲数字广告市场成熟，与欧美类似',
+    google: { share: '搜索主导', rank: '第1', match: 'top', desc: '澳洲搜索广告核心' },
+    meta: { share: '高渗透', rank: '社交第1', match: 'top', desc: 'FB/IG覆盖主流' },
+    tiktok: { share: '高增长', rank: '视频新贵', match: 'high', desc: '年轻用户增长快' },
+    twitter: { share: '中等', rank: '新闻平台', match: 'medium', desc: '新闻圈子活跃' },
+    linkedin: { share: '高', rank: 'B2B核心', match: 'high', desc: '职场人群覆盖好' },
+    snapchat: { share: '中等', rank: '年轻群体', match: 'medium', desc: '青少年活跃' },
+    bizFocus: { recruitment: 'linkedin', rental: 'meta', '2nd-ecom': 'google', '2nd-car': 'google' },
+  },
+  canada: {
+    coverage: '高', note: '加拿大社交媒体生态与美国基本一致',
+    google: { share: '搜索主导', rank: '第1', match: 'top', desc: '搜索数字广告核心' },
+    meta: { share: '高渗透', rank: '社交第1', match: 'top', desc: 'FB/IG全境覆盖' },
+    tiktok: { share: '高', rank: '短视频核心', match: 'high', desc: '年轻用户活跃度极高' },
+    twitter: { share: '中等', rank: '新闻平台', match: 'medium', desc: '新闻/体育圈活跃' },
+    linkedin: { share: '高', rank: 'B2B核心', match: 'high', desc: '职场人群覆盖好' },
+    snapchat: { share: '高', rank: '年轻群体', match: 'medium', desc: '青少年用户多' },
+    bizFocus: { recruitment: 'linkedin', rental: 'meta', '2nd-ecom': 'google', '2nd-car': 'google' },
+  },
+};
+
+const SOCIAl_CPI = {
+  india: { low: 0.10, high: 0.60 },
+  seasia: { low: 0.15, high: 0.70 },
+  africa: { low: 0.05, high: 0.30 },
+  'middle-east': { low: 0.20, high: 1.20 },
+  'latin-america': { low: 0.15, high: 0.60 },
+  europe: { low: 0.30, high: 2.50 },
+  usa: { low: 0.50, high: 5.00 },
+  australia: { low: 0.40, high: 3.00 },
+  canada: { low: 0.40, high: 3.00 },
+};
+
+// 社交媒体各平台在不同地区的CPC倾向（调整系数）
+const SOCIAL_PLATFORM_CPC_ADJ = {
+  google: { india: 0.25, seasia: 0.35, africa: 0.15, 'middle-east': 0.60, 'latin-america': 0.30, europe: 1.00, usa: 1.50, australia: 1.00, canada: 1.00 },
+  meta: { india: 0.20, seasia: 0.25, africa: 0.10, 'middle-east': 0.50, 'latin-america': 0.25, europe: 0.80, usa: 1.20, australia: 0.80, canada: 0.80 },
+  tiktok: { india: 999, seasia: 0.20, africa: 0.08, 'middle-east': 0.40, 'latin-america': 0.20, europe: 0.70, usa: 1.00, australia: 0.70, canada: 0.70 },
+  twitter: { india: 0.35, seasia: 0.40, africa: 0.20, 'middle-east': 0.70, 'latin-america': 0.40, europe: 1.20, usa: 1.80, australia: 1.20, canada: 1.20 },
+  linkedin: { india: 0.80, seasia: 1.00, africa: 0.50, 'middle-east': 1.50, 'latin-america': 0.80, europe: 2.50, usa: 3.50, australia: 2.50, canada: 2.50 },
+  snapchat: { india: 0.30, seasia: 0.35, africa: 0.15, 'middle-east': 0.50, 'latin-america': 0.30, europe: 1.00, usa: 1.50, australia: 1.00, canada: 1.00 },
+};
+
+// ==================== 厂商渠道各区域数据 ====================
 const REGION_DATA = {
   india: {
-    name: '印度', countries: ['印度'],
+    name: '印度', tier: 'S', countries: ['印度'],
     brands: {
       vivo: { share: '21%', rank: '🥇第1', match: 'high', desc: '连续两年年/季冠军' },
       oppo: { share: '15%', rank: '🥉第3', match: 'high', desc: 'Q4出货460万台' },
@@ -217,7 +394,7 @@ const REGION_DATA = {
     bizPlacements: { recruitment: ['应用商店 - 推荐/搜索', '浏览器 - 信息流/搜索'], rental: ['Jovi智慧场景 - 场景化卡片', '锁屏/日历/天气 - 系统级'], '2nd-ecom': ['应用商店 - 推荐/搜索', '浏览器 - 信息流/搜索'], '2nd-car': ['Jovi智慧场景 - 场景化卡片', '应用商店 - 推荐/搜索'] },
   },
   seasia: {
-    name: '东南亚', countries: ['印度尼西亚', '泰国', '越南', '马来西亚', '菲律宾'],
+    name: '东南亚', tier: 'S', countries: ['印度尼西亚', '泰国', '越南', '马来西亚', '菲律宾'],
     brands: {
       xiaomi: { share: '17%', rank: '第2', match: 'high', desc: '全年1700万部' },
       oppo: { share: '15%', rank: '第4', match: 'high', desc: '全年1470万部' },
@@ -231,7 +408,7 @@ const REGION_DATA = {
     bizPlacements: { recruitment: ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], rental: ['软件商店 - 推荐/搜索/Banner', '应用快捷栏(App Vault)'], '2nd-ecom': ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], '2nd-car': ['浏览器 - 信息流原生广告', '锁屏/通知栏 - 系统级推送'] },
   },
   africa: {
-    name: '非洲', countries: ['尼日利亚', '肯尼亚', '南非', '埃及', '加纳'],
+    name: '非洲', tier: 'A', countries: ['尼日利亚', '肯尼亚', '南非', '埃及', '加纳'],
     brands: {
       transsion: { share: '48%', rank: '🥇第1', match: 'high', desc: '非洲之王' },
       xiaomi: { share: '13%', rank: '🥉第3', match: 'high', desc: '全年1070万部' },
@@ -245,7 +422,7 @@ const REGION_DATA = {
     bizPlacements: { recruitment: ['PalmStore - 推荐/搜索/Banner', 'Phoenix浏览器 - 信息流/搜索'], rental: ['HiOS/XOS/itelOS系统级 - 锁屏/通知栏', 'PalmStore - 推荐/搜索/Banner'], '2nd-ecom': ['PalmStore - 推荐/搜索/Banner', 'Phoenix浏览器 - 信息流/搜索'], '2nd-car': ['HiOS/XOS/itelOS系统级 - 锁屏/通知栏', 'Boomplay音乐 - 开屏/信息流'] },
   },
   'middle-east': {
-    name: '中东', countries: ['沙特阿拉伯', '阿联酋', '卡塔尔', '科威特', '以色列'],
+    name: '中东', tier: 'A', countries: ['沙特阿拉伯', '阿联酋', '卡塔尔', '科威特', '以色列'],
     brands: {
       honor: { share: '18%', rank: '🥈第2', match: 'high', desc: '+73%增长' },
       transsion: { share: '12%', rank: '🥉第3', match: 'high', desc: '全年840万部' },
@@ -259,7 +436,7 @@ const REGION_DATA = {
     bizPlacements: { recruitment: ['应用商店 - 推荐/搜索', '浏览器 - 信息流'], rental: ['浏览器 - 信息流原生广告', '应用商店(GetApps) - 搜索广告'], '2nd-ecom': ['Phoenix浏览器 - 信息流/搜索', 'PalmStore - 推荐/搜索/Banner'], '2nd-car': ['MagicOS系统级 - 通知栏/负一屏', '浏览器 - 信息流'] },
   },
   'latin-america': {
-    name: '拉美', countries: ['巴西', '墨西哥', '哥伦比亚', '阿根廷', '智利'],
+    name: '拉美', tier: 'A', countries: ['巴西', '墨西哥', '哥伦比亚', '阿根廷', '智利'],
     brands: {
       xiaomi: { share: '17.5%', rank: '第2', match: 'high', desc: '哥伦比亚连续4年第1' },
       honor: { share: '10%', rank: '第4', match: 'high', desc: '+30%增长' },
@@ -273,52 +450,52 @@ const REGION_DATA = {
     bizPlacements: { recruitment: ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], rental: ['锁屏/通知栏 - 系统级推送', '应用商店(GetApps) - 搜索广告'], '2nd-ecom': ['应用商店 - 推荐/搜索', '浏览器 - 信息流'], '2nd-car': ['锁屏/通知栏 - 系统级推送', '应用商店(GetApps) - 搜索广告'] },
   },
   usa: {
-    name: '美国', countries: ['美国'],
+    name: '美国', tier: 'C', countries: ['美国'],
     brands: {
-      xiaomi: { share: '~2%', rank: '极有限', match: 'low', desc: '无运营商合作,线上渠道为主' },
+      xiaomi: { share: '~2%', rank: '极有限', match: 'low', desc: '无运营商合作' },
       oppo: { share: '-', rank: '无存在', match: 'low', desc: '未进入美国市场' },
-      vivo: { share: '-', rank: '无存在', match: 'low', desc: '未进入美国市场' },
-      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入美国市场' },
+      vivo: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
+      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
       honor: { share: '-', rank: '无存在', match: 'low', desc: '受制裁限制' },
       huawei: { share: '-', rank: '受限', match: 'low', desc: '受美国制裁' },
     },
     cpi: { low: 1.50, high: 4.00 },
-    note: '中国手机厂商在美国市场基本无商业化广告资源覆盖。建议优先使用Facebook/Google/Apple Search Ads等公开渠道',
+    note: '中国手机厂商在美国市场基本无商业化广告资源覆盖',
     bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
     bizPlacements: { recruitment: [], rental: [], '2nd-ecom': [], '2nd-car': [] },
   },
   australia: {
-    name: '澳洲', countries: ['澳大利亚'],
+    name: '澳洲', tier: 'C', countries: ['澳大利亚'],
     brands: {
-      xiaomi: { share: '~3%', rank: '有限', match: 'low', desc: '线上+JB Hi-Fi渠道' },
+      xiaomi: { share: '~3%', rank: '有限', match: 'low', desc: '线上+JB Hi-Fi' },
       oppo: { share: '~2%', rank: '有限', match: 'low', desc: '小规模存在' },
-      honor: { share: '-', rank: '极有限', match: 'low', desc: '尚未建立渠道' },
+      honor: { share: '-', rank: '极有限', match: 'low', desc: '未建立渠道' },
       vivo: { share: '-', rank: '有限', match: 'low', desc: '未重点布局' },
       transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
       huawei: { share: '-', rank: '受限', match: 'low', desc: '受制裁影响' },
     },
     cpi: { low: 1.00, high: 3.00 },
-    note: '澳洲市场中国厂商覆盖有限，小米有一定的线上用户基础但缺乏系统级广告资源',
+    note: '澳洲中国厂商覆盖有限',
     bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
     bizPlacements: { recruitment: [], rental: [], '2nd-ecom': [], '2nd-car': [] },
   },
   canada: {
-    name: '加拿大', countries: ['加拿大'],
+    name: '加拿大', tier: 'C', countries: ['加拿大'],
     brands: {
       xiaomi: { share: '~2%', rank: '极有限', match: 'low', desc: '无运营商合作' },
-      oppo: { share: '-', rank: '无存在', match: 'low', desc: '未进入加拿大市场' },
-      vivo: { share: '-', rank: '无存在', match: 'low', desc: '未进入加拿大市场' },
-      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入加拿大市场' },
+      oppo: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
+      vivo: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
+      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
       honor: { share: '-', rank: '无存在', match: 'low', desc: '未建立渠道' },
       huawei: { share: '-', rank: '受限', match: 'low', desc: '受制裁影响' },
     },
     cpi: { low: 1.50, high: 3.50 },
-    note: '加拿大市场中国厂商基本无系统级广告资源，建议使用Google Ads/Facebook Ads等公开渠道',
+    note: '加拿大中国厂商基本无系统级广告资源',
     bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
     bizPlacements: { recruitment: [], rental: [], '2nd-ecom': [], '2nd-car': [] },
   },
   europe: {
-    name: '欧洲', countries: ['德国', '法国', '英国', '意大利', '西班牙', '俄罗斯'],
+    name: '欧洲', tier: 'B', countries: ['德国', '法国', '英国', '意大利', '西班牙', '俄罗斯'],
     brands: {
       xiaomi: { share: '20.3%', rank: '🥉第3', match: 'high', desc: '俄罗斯第1,西欧稳固' },
       honor: { share: '-', rank: '前五', match: 'medium', desc: '首次进入前五' },
@@ -335,30 +512,31 @@ const REGION_DATA = {
 
 const BIZ_NAMES = { recruitment: '招聘', rental: '房租出租/出售', '2nd-ecom': '二手电商', '2nd-car': '二手车' };
 const BIZ_ICONS = { recruitment: '💼', rental: '🏠', '2nd-ecom': '🛒', '2nd-car': '🚗' };
-const BIZ_DESC = {
-  recruitment: '需要大量下载转化+表单提交，适合应用商店搜索广告+信息流广覆盖',
-  rental: 'LBS定向+本地化强曝光需求，适合系统级推送+场景化卡片投放',
-  '2nd-ecom': '强依赖下载转化+平台信任建设，适合应用商店+浏览器组合投放',
-  '2nd-car': '高客单价商品，需要品牌信任+精准人群触达，适合强曝光+搜索组合',
-};
 
 // ==================== 交互逻辑 ====================
-let selectedBiz = null, selectedRegion = null, selectedCountry = null;
+let selectedBiz = null, selectedRegion = null, selectedCountry = null, selectedChannel = 'all';
 
 function selectBiz(el) {
-  document.querySelectorAll('.tag-biz').forEach(t => { t.classList.remove('active', 'active-recruitment', 'active-rental', 'active-2nd-ecom', 'active-2nd-car'); });
+  document.querySelectorAll('.tag-biz').forEach(t => t.classList.remove('active', 'active-recruitment', 'active-rental', 'active-2nd-ecom', 'active-2nd-car'));
   el.classList.add('active');
   el.classList.add('active-' + el.dataset.biz);
   selectedBiz = el.dataset.biz;
   document.getElementById('resultSection').style.display = 'none';
 }
-
+function selectChannelType(el) {
+  document.querySelectorAll('.channel-type-tag').forEach(t => t.classList.remove('active', 'active-mfg', 'active-social', 'active-all'));
+  el.classList.add('active');
+  el.classList.add('active-' + el.dataset.channel);
+  selectedChannel = el.dataset.channel;
+  document.getElementById('resultSection').style.display = 'none';
+}
 function selectRegion(el) {
   document.querySelectorAll('.region-tag').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   selectedRegion = el.dataset.region;
   selectedCountry = null;
-  // 更新子国家选项
+  const tier = COUNTRY_TIERS[selectedRegion] || 'C';
+  document.getElementById('tierDisplay').textContent = '【' + TIER_LABELS[tier] + '】';
   const subDiv = document.getElementById('countrySubSelect');
   const subContainer = document.getElementById('subCountryTags');
   const region = REGION_DATA[selectedRegion];
@@ -373,7 +551,6 @@ function selectRegion(el) {
   }
   document.getElementById('resultSection').style.display = 'none';
 }
-
 function selectSubCountry(el, country) {
   document.querySelectorAll('.country-sub-tag').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
@@ -382,21 +559,14 @@ function selectSubCountry(el, country) {
 
 // ==================== 推荐引擎 ====================
 function generate() {
-  if (!selectedBiz || !selectedRegion) {
-    alert('请先选择业务类型和投放地区');
-    return;
-  }
-
+  if (!selectedBiz || !selectedRegion) { alert('请先选择业务类型和投放地区'); return; }
   const btn = document.getElementById('genBtn');
-  btn.disabled = true;
-  btn.textContent = '⏳ 正在分析...';
+  btn.disabled = true; btn.textContent = '⏳ 正在分析...';
   document.getElementById('resultSection').style.display = 'none';
-
   setTimeout(() => {
     const result = doGenerate();
     renderResult(result);
-    btn.disabled = false;
-    btn.textContent = '🚀 生成推荐方案';
+    btn.disabled = false; btn.textContent = '🚀 生成推荐方案';
     document.getElementById('resultSection').style.display = 'block';
     document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 400);
@@ -404,134 +574,139 @@ function generate() {
 
 function doGenerate() {
   const region = REGION_DATA[selectedRegion];
+  const socialRegion = SOCIAL_REGION_DATA[selectedRegion];
   const biz = selectedBiz;
   const costTarget = parseFloat(document.getElementById('costTarget').value) || null;
   const budget = parseFloat(document.getElementById('budget').value) || 0;
-
-  // 判断是否为低覆盖市场（美国/澳洲/加拿大）
   const isLowCoverage = region.note && Object.values(region.brands).every(b => b.match === 'low');
 
-  // 1. 按匹配度排序品牌
-  const brandEntries = Object.entries(region.brands)
+  // 收集厂商渠道推荐
+  const mfgEntries = Object.entries(region.brands)
     .filter(([_, info]) => isLowCoverage || info.match !== 'low')
-    .sort((a, b) => {
-      const order = { high: 3, medium: 2, low: 1 };
-      return order[b[1].match] - order[a[1].match];
-    });
+    .sort((a, b) => { const o = { high: 3, medium: 2, low: 1 }; return o[b[1].match] - o[a[1].match]; });
 
-  // 2. 对每个品牌计算推荐版位
-  let recommendations = brandEntries.map(([key, info]) => {
+  let mfgRecs = mfgEntries.map(([key, info]) => {
     const brand = BRANDS[key];
+    if (!brand) return null;
     const allPlacements = PLACEMENTS[key] || [];
-
-    // 低覆盖市场特殊处理
-    if (isLowCoverage && (info.match === 'low')) {
-      return { key, brand, info, noPlatform: true, advice: region.note };
-    }
-
-    // 业务类型优先推荐版位
+    if (isLowCoverage && info.match === 'low') return { key, brand, info, noPlatform: true, advice: region.note };
     const bizPreferred = (region.bizPlacements && region.bizPlacements[biz]) || [];
     let placements;
     if (bizPreferred.length > 0) {
-      placements = allPlacements.filter(p =>
-        bizPreferred.some(bp => p.name.includes(bp.replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '').slice(0,4)))
-      );
+      placements = allPlacements.filter(p => bizPreferred.some(bp => p.name.includes(bp.replace(/[^\u4e00-\u9fa5a-zA-Z]/g,'').slice(0,4))));
       if (placements.length === 0) placements = allPlacements.slice(0, 4);
-    } else {
-      placements = allPlacements.slice(0, 4);
-    }
-
-    // 过滤成本
+    } else { placements = allPlacements.slice(0, 4); }
     const regionCPI = region.cpi || { low: 0.2, high: 1.0 };
-    if (costTarget && costTarget < regionCPI.low) {
-      // 成本目标低于市场价 → 推荐更廉价渠道
-      placements = placements.filter(p => p.score <= 4);
-    }
+    if (costTarget && costTarget < regionCPI.low) placements = placements.filter(p => p.score <= 4);
     if (placements.length === 0) placements = allPlacements.slice(0, 2);
-
-    // CPC 市场中间价
     const avgCpc = (regionCPI.low + regionCPI.high) / 2;
-    // 网站UV预估成本 = CPC × 重复点击系数（约30%用户重复点击）
     const uvCost = avgCpc * 1.3;
-    // 线索成本（表单填写）预估 = CPC ÷ 预估转化率
     const cplConversionRate = { recruitment: 0.08, rental: 0.05, '2nd-ecom': 0.10, '2nd-car': 0.03 };
     const leadCost = avgCpc / (cplConversionRate[biz] || 0.05);
-    // 交易成本估算（业务类型相关）
     const bizCostMultiplier = { recruitment: 0.3, rental: 1.5, '2nd-ecom': 0.5, '2nd-car': 3.0 };
     const transactionCost = avgCpc * (bizCostMultiplier[biz] || 1);
-
-    // 投放建议
     let advice = '';
     const budgetLevel = budget > 20000 ? 'large' : budget > 5000 ? 'medium' : 'small';
     switch (key) {
-      case 'xiaomi':
-        advice = `小米是${region.name}市场主流渠道，覆盖广、用户量大。推荐采用「应用商店搜索+浏览器信息流」组合投放，`;
-        advice += budgetLevel === 'large' ? '适合大规模买量，建议签订年度框架争取返点。' : budgetLevel === 'medium' ? '建议聚焦核心城市精细化投放。' : '建议从浏览器信息流起步，控制测试预算。';
-        break;
-      case 'oppo':
-        advice = `OPPO用户群体偏年轻化，在${region.name}市场与电商、社交类产品匹配度高。推荐以软件商店为核心，`;
-        advice += biz === '2nd-ecom' ? '电商类产品可叠加OPPO广告联盟补充流量。' : '可叠加浏览器信息流扩大覆盖面。';
-        break;
-      case 'vivo':
-        advice = `vivo在${region.name}市场线下优势领先，推荐「应用商店+Jovi场景」组合。`;
-        advice += biz === 'rental' ? 'Jovi智慧场景的LBS能力精准匹配租房、本地服务类投放需求。' : 'Jovi场景化卡片有助于提升转化率。';
-        break;
-      case 'transsion':
-        advice = `传音在${region.name}市场具有统治力覆盖，PalmStore是必投渠道。推荐采用「PalmStore搜索+Boomplay音乐」组合触达年轻用户，`;
-        advice += budgetLevel === 'large' ? '建议争取系统级锁屏流量。' : '聚焦应用商店搜索广告控制成本。';
-        break;
-      case 'honor':
-        advice = `荣耀在${region.name}正处于高速增长期，渠道成本相对较低。推荐优先布局应用商店和浏览器，`;
-        advice += '当前窗口期适合提前锁定低价流量。建议与荣耀建立季度框架合作。';
-        break;
-      case 'huawei':
-        advice = `华为在${region.name}市场处于恢复阶段，用户偏高端。推荐AppGallery+锁屏强曝光组合，`;
-        advice += '适合品牌建设类投放而非纯效果买量。';
-        break;
+      case 'xiaomi': advice = `小米是${region.name}市场主流渠道，覆盖广、用户量大。推荐「应用商店搜索+浏览器信息流」组合` + (budgetLevel === 'large' ? '。适合大规模买量，建议签订年度框架争取返点。' : budgetLevel === 'medium' ? '。建议聚焦核心城市精细化投放。' : '。建议从浏览器信息流起步。'); break;
+      case 'oppo': advice = `OPPO用户偏年轻化，推荐以软件商店为核心` + (biz === '2nd-ecom' ? '，可叠加OPPO广告联盟补充流量。' : '，可叠加浏览器信息流扩大覆盖面。'); break;
+      case 'vivo': advice = `vivo线下优势领先，推荐「应用商店+Jovi场景」组合。` + (biz === 'rental' ? 'Jovi智慧场景的LBS能力精准匹配本地服务投放需求。' : 'Jovi场景化卡片提升转化率。'); break;
+      case 'transsion': advice = `传音在${region.name}具有统治力覆盖，PalmStore必投。` + (budgetLevel === 'large' ? '建议争取系统级锁屏流量。' : '聚焦应用商店搜索控制成本。'); break;
+      case 'honor': advice = `荣耀在${region.name}处于高速增长期，渠道成本较低。推荐优先布局应用商店和浏览器，建议建立季度框架合作。`; break;
+      case 'huawei': advice = `华为在${region.name}处于恢复阶段，用户偏高端。推荐AppGallery+锁屏强曝光组合，适合品牌建设。`; break;
     }
+    return { key, brand, info, placements, cpcRange: `$${regionCPI.low.toFixed(2)}-${regionCPI.high.toFixed(2)}`, avgCpc: avgCpc.toFixed(2), uvCost: uvCost.toFixed(2), leadCost: leadCost.toFixed(2), transactionCost: transactionCost.toFixed(2), allocatedBudget: 0, monthlyClicks: 0, dailyUV: 0, monthlyLeads: 0, advice, channelType: 'mfg' };
+  }).filter(Boolean);
 
-    return {
-      key, brand, info, placements,
-      cpcRange: `$${regionCPI.low.toFixed(2)}-${regionCPI.high.toFixed(2)}`,
-      avgCpc: avgCpc.toFixed(2),
-      uvCost: uvCost.toFixed(2),
-      leadCost: leadCost.toFixed(2),
-      transactionCost: transactionCost.toFixed(2),
-      allocatedBudget: 0,
-      dailyUV: 0,
-      monthlyUV: 0,
-      monthlyClicks: 0,
-      monthlyLeads: 0,
-      advice
-    };
+  // 收集社交媒体渠道推荐
+  let socialRecs = [];
+  if (selectedChannel !== 'mfg' && socialRegion) {
+    const socialEntries = Object.entries(SOCIAL_BRANDS)
+      .filter(([key]) => {
+        const sinfo = socialRegion[key];
+        return sinfo && sinfo.match !== 'low';
+      })
+      .sort((a, b) => { const o = { top: 3, high: 2, medium: 1, low: 0 }; return o[b[1].match || 'low'] - o[a[1].match || 'low']; })
+      .map(([key]) => [key, socialRegion[key]]);
+
+    socialRecs = socialEntries.map(([key, info]) => {
+      const brand = SOCIAL_BRANDS[key];
+      const allPlacements = PLACEMENTS[key] || [];
+      const socPi = SOCIAl_CPI[selectedRegion] || { low: 0.2, high: 1.0 };
+      const adj = SOCIAL_PLATFORM_CPC_ADJ[key] || {};
+      const platCpc = (adj[selectedRegion] !== undefined ? adj[selectedRegion] : (socPi.low + socPi.high) / 2);
+      let cpcLow = socPi.low * (platCpc / 0.5) * 0.7;
+      let cpcHigh = socPi.high * (platCpc / 0.5) * 1.3;
+      if (key === 'tiktok' && selectedRegion === 'india') { cpcLow = 999; cpcHigh = 999; }
+      const avgCpc = (cpcLow + cpcHigh) / 2;
+      if (key === 'tiktok' && selectedRegion === 'india') { avgCpc = 999; }
+      const bizPreferred = socialRegion.bizFocus ? socialRegion.bizFocus[biz] : null;
+      const isPreferred = bizPreferred === key;
+      let placements = allPlacements.slice(0, isPreferred ? 4 : 3);
+      if (costTarget && avgCpc > costTarget * 1.5) placements = placements.slice(0, 1);
+      const uvCost = avgCpc * 1.2;
+      const cplConversionRate = { recruitment: 0.10, rental: 0.08, '2nd-ecom': 0.12, '2nd-car': 0.05 };
+      const leadCost = avgCpc / (cplConversionRate[biz] || 0.08);
+      const bizCostMultiplier = { recruitment: 0.3, rental: 1.5, '2nd-ecom': 0.5, '2nd-car': 3.0 };
+      const transactionCost = avgCpc * (bizCostMultiplier[biz] || 1);
+      let advice = '';
+      switch (key) {
+        case 'google': advice = `Google是${region.name}数字广告基础设施。推荐搜索广告捕获精准意图` + (biz === 'rental' || biz === '2nd-car' ? '，搜索词定向效果好。' : '，适合全漏斗投放。'); break;
+        case 'meta': advice = `Meta在${region.name}用户渗透率极高。FB+IG组合适合广覆盖，` + (biz === 'recruitment' ? '精准人群定向匹配招聘场景。' : '多种广告格式适配各类业务。'); break;
+        case 'tiktok': advice = selectedRegion === 'india' ? '⚠️ TikTok在印度被禁，此平台不可用。' : `TikTok在${region.name}年轻用户增长迅猛，` + (biz === '2nd-ecom' ? '商品展示效果好，适合种草转化。' : '适合品牌曝光和获取年轻用户。'); break;
+        case 'twitter': advice = `Twitter/X在${region.name}是话题中心，` + (biz === '2nd-car' ? '汽车类话题讨论活跃，适合品牌互动。' : '适合热点营销和舆论引导。'); break;
+        case 'linkedin': advice = `LinkedIn在${region.name}是B2B和职场招聘核心渠道，` + (biz === 'recruitment' ? '精准职业定向最适合招聘场景。' : '也适合高端服务和品牌建设。'); break;
+        case 'snapchat': advice = `Snapchat在${region.name}年轻用户覆盖好，` + (biz === 'rental' ? '结合AR滤镜做本地服务触达效果好。' : '适合年轻人消费品牌曝光。'); break;
+      }
+      return { key, brand, info, placements, cpcRange: cpcLow >= 999 ? 'N/A' : `$${cpcLow.toFixed(2)}-${cpcHigh.toFixed(2)}`, avgCpc: avgCpc >= 999 ? 999 : avgCpc.toFixed(2), uvCost: uvCost.toFixed(2), leadCost: leadCost.toFixed(2), transactionCost: transactionCost.toFixed(2), allocatedBudget: 0, monthlyClicks: 0, dailyUV: 0, monthlyLeads: 0, advice, channelType: 'social', matchLabel: isPreferred ? '推荐' : (info.match === 'top' ? '强烈推荐' : '推荐') };
+    });
+  }
+
+  // 合并渠道
+  let allRecs = [];
+  if (selectedChannel === 'mfg') allRecs = mfgRecs;
+  else if (selectedChannel === 'social') allRecs = socialRecs;
+  else allRecs = [...mfgRecs, ...socialRecs];
+
+  // 排序
+  const order = { top: 0, high: 1, medium: 2, low: 3 };
+  allRecs.sort((a, b) => {
+    if (a.noPlatform) return 1;
+    if (b.noPlatform) return -1;
+    const oA = order[a.info?.match || 'low'] || 3;
+    const oB = order[b.info?.match || 'low'] || 3;
+    return oA - oB;
   });
 
-  // 按匹配度排序
-  const order = { high: 0, medium: 1, low: 2 };
-  recommendations.sort((a, b) => order[a.info.match] - order[b.info.match]);
-
-  // ===== 升级版预算分配算法：基于多因子评分 =====
-  // 因子1：市场占有率（品牌在该地区的精确出货份额）
-  // 因子2：业务匹配系数（该品牌是否为此业务类型的首选推荐）
-  // 因子3：排名加成（市场第1/第2的额外权重）
+  // ===== 多因子评分预算分配 =====
   function parseSharePct(shareStr) {
     if (!shareStr || shareStr === '-') return 0;
     const m = shareStr.match(/(\d+(?:\.\d+)?)%/);
     return m ? parseFloat(m[1]) : 0;
   }
-  function computeScore(key, info, biz, region) {
-    const sharePct = parseSharePct(info.share);
-    // 业务匹配：bizFocus指定的首选品牌+0.3，其他high匹配+0.1
-    const focus = region.bizFocus && region.bizFocus[biz];
-    const bizBonus = focus === key ? 0.3 : (info.match === 'high' ? 0.1 : 0);
-    // 排名加成：市场第1+0.15，第2+0.08
-    const rankBonus = info.rank.includes('🥇') ? 0.15 : info.rank.includes('🥈') ? 0.08 : 0;
-    // 综合评分 = 市占率 × (1 + 业务匹配 + 排名加成)
-    return (sharePct / 100) * (1 + bizBonus + rankBonus);
+  function computeScore(rec, biz, region, socialRegion) {
+    const isSocial = rec.channelType === 'social';
+    if (rec.noPlatform) return 0;
+    if (isSocial) {
+      const sinfo = socialRegion && socialRegion[rec.key];
+      if (!sinfo) return 0;
+      const matchScore = sinfo.match === 'top' ? 0.8 : sinfo.match === 'high' ? 0.5 : 0.2;
+      const bizPreferred = socialRegion.bizFocus ? socialRegion.bizFocus[biz] : null;
+      const bizBonus = bizPreferred === rec.key ? 0.3 : 0;
+      return matchScore + bizBonus;
+    } else {
+      const info = region.brands[rec.key];
+      if (!info) return 0;
+      const sharePct = parseSharePct(info.share);
+      const focus = region.bizFocus && region.bizFocus[biz];
+      const bizBonus = focus === rec.key ? 0.3 : (info.match === 'high' ? 0.1 : 0);
+      const rankBonus = info.rank && (info.rank.includes('🥇') ? 0.15 : info.rank.includes('🥈') ? 0.08 : 0);
+      return (sharePct / 100) * (1 + bizBonus + (rankBonus || 0));
+    }
   }
-  // 先算分再分配
+
   if (budget > 0) {
-    const scored = recommendations.map(r => ({ ...r, score: computeScore(r.key, r.info, biz, region) }));
+    const scored = allRecs.map(r => ({ ...r, score: computeScore(r, biz, region, socialRegion) }));
     const totalScore = scored.reduce((s, r) => s + r.score, 0);
     if (totalScore > 0) {
       scored.forEach(r => {
@@ -539,7 +714,7 @@ function doGenerate() {
         const cpc = parseFloat(r.avgCpc);
         const uv = parseFloat(r.uvCost);
         const lead = parseFloat(r.leadCost);
-        if (cpc > 0) {
+        if (cpc > 0 && cpc < 900) {
           r.monthlyClicks = Math.round(r.allocatedBudget / cpc);
           r.monthlyUV = Math.round(r.allocatedBudget / uv);
           r.dailyUV = Math.round(r.monthlyUV / 30);
@@ -547,78 +722,66 @@ function doGenerate() {
         }
       });
     }
-    recommendations = scored;
+    allRecs = scored;
   }
+
+  // 汇总
+  const mfgBudget = allRecs.filter(r => r.channelType === 'mfg').reduce((s, r) => s + r.allocatedBudget, 0);
+  const socialBudget = allRecs.filter(r => r.channelType === 'social').reduce((s, r) => s + r.allocatedBudget, 0);
+  const totalClicks = allRecs.reduce((s, r) => s + r.monthlyClicks, 0);
+  const totalUV = allRecs.reduce((s, r) => s + r.monthlyUV, 0);
+  const totalLeads = allRecs.reduce((s, r) => s + r.monthlyLeads, 0);
 
   return {
     region: region.name,
     country: selectedCountry || region.countries[0],
     biz: BIZ_NAMES[biz],
     bizIcon: BIZ_ICONS[biz],
-    bizDesc: BIZ_DESC[biz],
-    costTarget,
-    budget,
-    recommendations
+    tier: COUNTRY_TIERS[selectedRegion] || 'C',
+    recommendations: allRecs,
+    budget, mfgBudget, socialBudget,
+    totalClicks, totalUV, totalLeads,
+    channelLabel: selectedChannel === 'all' ? '全部渠道' : selectedChannel === 'mfg' ? '厂商渠道' : '海外社交媒体',
   };
 }
 
+// ==================== 渲染 ====================
 function renderResult(data) {
-  const meta = document.getElementById('resultMeta');
-  meta.textContent = `· ${data.bizIcon} ${data.biz} · ${data.country || data.region}`;
+  document.getElementById('resultMetaBlock').innerHTML = `<div class="summary-box"><div style="display:flex;justify-content:space-between;align-items:center;"><div><span style="font-size:16px;font-weight:700;">${data.bizIcon} ${data.biz}</span><span class="tier-badge tier-${data.tier}">${data.tier}级 · ${data.country || data.region}</span></div><span style="font-size:12px;color:#888;">${data.channelLabel}</span></div></div>`;
+
+  // 总预算汇总
+  let summaryHTML = '';
+  if (data.totalClicks > 0) {
+    summaryHTML = `<div class="summary-box total"><div style="font-weight:600;font-size:14px;">📊 总预算分配汇总</div><div class="summary-row">`;
+    if (data.mfgBudget > 0 && data.socialBudget > 0) {
+      summaryHTML += `<div class="summary-item"><div class="num">$${(data.mfgBudget).toLocaleString()}</div><div class="lbl">厂商渠道分配</div></div><div class="summary-item"><div class="num">$${(data.socialBudget).toLocaleString()}</div><div class="lbl">社交媒体分配</div></div>`;
+    }
+    summaryHTML += `<div class="summary-item"><div class="num">${data.totalClicks.toLocaleString()}</div><div class="lbl">月预估点击</div></div><div class="summary-item"><div class="num">${data.totalUV.toLocaleString()}</div><div class="lbl">月预估UV</div></div><div class="summary-item"><div class="num">${data.totalLeads.toLocaleString()}</div><div class="lbl">月预估线索</div></div>`;
+    summaryHTML += `</div></div>`;
+  }
+  document.getElementById('resultSummary').innerHTML = summaryHTML;
 
   let html = '';
-  data.recommendations.forEach((r, idx) => {
-    // 低覆盖市场 - 无厂商广告资源
+  data.recommendations.forEach((r) => {
     if (r.noPlatform) {
-      html += `<div class="result-card">
-        <div class="result-header">
-          <span class="brand-name">${r.brand.icon} ${r.brand.name}</span>
-          <span class="brand-match match-low">无可用</span>
-        </div>
-        <div class="result-body">
-          <div style="font-size:12px;color:#888;margin-bottom:8px;">${r.info.rank} · ${r.info.share}份额 · ${r.info.desc}</div>
-          <div class="advice-box" style="background:#fff3e0;color:#bf6d00;"><strong>⚠️ 无系统级广告资源</strong><br>${r.advice}</div>
-        </div>
-      </div>`;
+      html += `<div class="result-card"><div class="result-header"><span class="brand-name">${r.brand.icon} ${r.brand.name}</span><span class="brand-match match-low">无可用</span></div><div class="result-body"><div style="font-size:12px;color:#888;margin-bottom:8px;">${r.info.rank || ''} · ${r.info.share || ''}</div><div class="advice-box" style="background:#fff3e0;color:#bf6d00;"><strong>⚠️ 无系统级广告资源</strong><br>${r.advice}</div></div></div>`;
       return;
     }
 
-    const matchLabel = r.info.match === 'high' ? '强烈推荐' : (r.info.match === 'medium' ? '推荐' : '可选');
-    const matchClass = r.info.match === 'high' ? 'match-high' : 'match-medium';
-    const totalScore = r.placements.reduce((s,p)=>s+p.score,0);
+    const matchLabel = r.info?.match === 'top' ? '强烈推荐' : (r.info?.match === 'high' ? '强烈推荐' : (r.info?.match === 'medium' ? '推荐' : '可选'));
+    const matchClass = r.info?.match === 'top' ? 'match-top' : (r.info?.match === 'high' ? 'match-high' : 'match-medium');
+    const totalScore = r.placements.reduce((s, p) => s + p.score, 0);
     const avgScore = r.placements.length > 0 ? totalScore / r.placements.length : 0;
     const stars = '⭐'.repeat(Math.min(Math.ceil(avgScore), 5));
+    const typeIcon = r.channelType === 'mfg' ? '📱' : '📣';
 
-    html += `<div class="result-card">
-      <div class="result-header">
-        <span class="brand-name">${r.brand.icon} ${r.brand.name}</span>
-        <span class="brand-match ${matchClass}">${matchLabel}</span>
-      </div>
-      <div class="result-body">
-        <div style="font-size:12px;color:#888;margin-bottom:8px;">
-          ${r.brand.platform} · ${r.info.rank} · ${r.info.share}份额 · ${r.info.desc}
-        </div>
-        <div class="result-section-title">📌 推荐资源版位 ${stars}</div>
-        <ul class="placement-list">
-          ${r.placements.map(p => `<li class="placement-item"><span class="placement-name">· ${p.name}</span><span class="placement-score">${'⭐'.repeat(p.score)}</span></li>`).join('')}
-        </ul>
-        <div class="result-section-title">💰 成本估算</div>
-        <div class="cost-row">
-          <div class="cost-box"><div class="label">CPC成本</div><div class="value">${r.cpcRange}</div><div class="sub">/次点击</div></div>
-          <div class="cost-box"><div class="label">UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div>
-          <div class="cost-box"><div class="label">线索成本(CPL)</div><div class="value">$${r.leadCost}</div><div class="sub">/条表单线索</div></div>
-          <div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单</div></div>
-        </div>
-        ${r.allocatedBudget > 0 ? `<div class="result-section-title">📈 预算分配与效果预估</div>
-        <div class="cost-row">
-          <div class="cost-box" style="background:#e8f5e9;"><div class="label">分配预算</div><div class="value" style="color:#2e7d32;">$${r.allocatedBudget.toLocaleString()}</div><div class="sub">占总预算${Math.round(r.allocatedBudget / data.budget * 100)}%</div></div>
-          <div class="cost-box"><div class="label">预估月点击</div><div class="value">${r.monthlyClicks.toLocaleString()}</div><div class="sub">次</div></div>
-          <div class="cost-box"><div class="label">预估日均UV</div><div class="value">${r.dailyUV.toLocaleString()}</div><div class="sub">独立访客/天</div></div>
-          <div class="cost-box"><div class="label">预估月线索</div><div class="value">${r.monthlyLeads.toLocaleString()}</div><div class="sub">条表单</div></div>
-        </div>` : ''}
-        <div class="advice-box"><strong>🎯 投放建议</strong><br>${r.advice}</div>
-      </div>
-    </div>`;
+    html += `<div class="result-card"><div class="result-header"><span class="brand-name">${typeIcon} ${r.brand.icon || ''} ${r.brand.name}</span><span class="brand-match ${matchClass}">${matchLabel}</span></div><div class="result-body"><div style="font-size:12px;color:#888;margin-bottom:8px;">${r.brand.platform} · ${r.info?.rank || ''} · ${r.info?.share || ''}${r.info?.desc ? ' · ' + r.info.desc : ''}</div><div class="result-section-title">📌 推荐资源版位 ${stars}</div><ul class="placement-list">${r.placements.map(p => `<li class="placement-item"><span class="placement-name">· ${p.name}</span><span class="placement-score">${'⭐'.repeat(p.score)}</span></li>`).join('')}</ul><div class="result-section-title">💰 成本估算</div><div class="cost-row"><div class="cost-box"><div class="label">CPC成本</div><div class="value">${r.cpcRange}</div><div class="sub">/次点击</div></div><div class="cost-box"><div class="label">UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div><div class="cost-box"><div class="label">线索成本(CPL)</div><div class="value">$${r.leadCost}</div><div class="sub">/条表单线索</div></div><div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单</div></div></div>`;
+
+    if (r.allocatedBudget > 0 && r.monthlyClicks > 0) {
+      html += `<div class="result-section-title">📈 预算分配与效果预估</div><div class="cost-row"><div class="cost-box" style="background:#e8f5e9;"><div class="label">分配预算</div><div class="value" style="color:#2e7d32;">$${r.allocatedBudget.toLocaleString()}</div><div class="sub">占总额${data.budget > 0 ? Math.round(r.allocatedBudget / data.budget * 100) : 0}%</div></div><div class="cost-box"><div class="label">预估月点击</div><div class="value">${(r.monthlyClicks || 0).toLocaleString()}</div><div class="sub">次</div></div><div class="cost-box"><div class="label">预估日均UV</div><div class="value">${(r.dailyUV || 0).toLocaleString()}</div><div class="sub">独立访客/天</div></div><div class="cost-box"><div class="label">预估月线索</div><div class="value">${(r.monthlyLeads || 0).toLocaleString()}</div><div class="sub">条表单</div></div></div>`;
+    }
+
+    html += `<div class="advice-box"><strong>🎯 投放建议</strong><br>${r.advice}</div></div></div>`;
   });
 
   document.getElementById('resultContent').innerHTML = html;
