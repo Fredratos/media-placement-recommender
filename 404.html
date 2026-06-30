@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>手机厂商出海投放资源推荐器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Helvetica Neue', sans-serif; background: #f5f7fa; color: #1a1a2e; min-height: 100vh; }
+.header { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); color: #fff; padding: 24px 20px 20px; text-align: center; }
+.header h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+.header p { font-size: 13px; opacity: .75; }
+.container { max-width: 420px; margin: 0 auto; padding: 16px; }
+.card { background: #fff; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+.card-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: #1a1a2e; display: flex; align-items: center; gap: 6px; }
+.tag-group { display: flex; flex-wrap: wrap; gap: 8px; }
+.tag { padding: 8px 16px; border-radius: 20px; border: 1.5px solid #ddd; font-size: 14px; background: #fff; color: #555; cursor: pointer; transition: all .2s; user-select: none; -webkit-tap-highlight-color: transparent; }
+.tag:active { transform: scale(.96); }
+.tag.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+.tag.tag-biz.active-recruitment { background: #e74c3c; border-color: #e74c3c; color:#fff; }
+.tag.tag-biz.active-rental { background: #3498db; border-color: #3498db; color:#fff; }
+.tag.tag-biz.active-2nd-ecom { background: #2ecc71; border-color: #2ecc71; color:#fff; }
+.tag.tag-biz.active-2nd-car { background: #f39c12; border-color: #f39c12; color:#fff; }
+.region-group { margin-top: 4px; }
+.region-tag { padding: 7px 14px; border-radius: 16px; border: 1.5px solid #ddd; font-size: 13px; background: #fff; color: #555; cursor: pointer; transition: all .2s; margin: 3px; user-select: none; -webkit-tap-highlight-color: transparent; }
+.region-tag:active { transform: scale(.96); }
+.region-tag.active { background: #0f3460; color: #fff; border-color: #0f3460; }
+.input-group { margin-bottom: 10px; }
+.input-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 500; }
+.input-group input { width: 100%; padding: 10px 14px; border: 1.5px solid #e0e0e0; border-radius: 10px; font-size: 14px; outline: none; transition: border .2s; }
+.input-group input:focus { border-color: #0f3460; }
+.input-hint { font-size: 12px; color: #999; margin-top: 4px; }
+.btn-generate { display: block; width: 100%; padding: 14px; background: linear-gradient(135deg, #0f3460, #1a5276); color: #fff; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all .3s; box-shadow: 0 4px 12px rgba(15,52,96,.3); }
+.btn-generate:disabled { opacity: .5; cursor: not-allowed; }
+.btn-generate:active { transform: scale(.97); }
+.result-section { display: none; }
+.result-card { background: #fff; border-radius: 14px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.06); overflow: hidden; }
+.result-header { padding: 14px 18px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.result-header .brand-name { font-size: 17px; font-weight: 700; }
+.result-header .brand-match { font-size: 12px; color: #fff; padding: 3px 10px; border-radius: 10px; }
+.match-high { background: #27ae60; }
+.match-medium { background: #f39c12; }
+.match-low { background: #95a5a6; }
+.result-body { padding: 14px 18px; }
+.result-section-title { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 8px; margin-top: 12px; }
+.result-section-title:first-child { margin-top: 0; }
+.placement-list { list-style: none; }
+.placement-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; }
+.placement-item:last-child { border-bottom: none; }
+.placement-name { color: #333; font-weight: 500; }
+.placement-score { color: #f39c12; font-size: 12px; }
+.cost-row { display: flex; gap: 12px; }
+.cost-box { flex: 1; text-align: center; padding: 10px; background: #f8f9fa; border-radius: 10px; }
+.cost-box .label { font-size: 11px; color: #888; }
+.cost-box .value { font-size: 18px; font-weight: 700; color: #0f3460; margin-top: 2px; }
+.cost-box .sub { font-size: 11px; color: #999; }
+.advice-box { background: #eaf4fe; border-radius: 10px; padding: 12px; font-size: 13px; color: #1a5276; line-height: 1.7; margin-top: 10px; }
+.advice-box strong { color: #0f3460; }
+.no-result { text-align: center; padding: 40px 20px; color: #999; font-size: 14px; }
+.footer-note { text-align: center; font-size: 11px; color: #aaa; padding: 20px 0; }
+.country-sub-select { margin-top: 8px; display: none; }
+.country-sub-select.show { display: block; }
+.country-sub-tag { padding: 5px 10px; border-radius: 12px; border: 1px solid #ddd; font-size: 12px; background: #fff; color: #555; cursor: pointer; margin: 2px; }
+.country-sub-tag.active { background: #1a5276; color: #fff; border-color: #1a5276; }
+.loading { text-align: center; padding: 30px; }
+.loading .spinner { width: 32px; height: 32px; border: 3px solid #f0f0f0; border-top-color: #0f3460; border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📱 厂商投放资源推荐器</h1>
+  <p>基于2025全年及2026Q1数据，快速匹配最优投放方案</p>
+</div>
+
+<div class="container">
+  <!-- 业务选择 -->
+  <div class="card">
+    <div class="card-title">🎯 选择业务类型</div>
+    <div class="tag-group" id="bizGroup">
+      <span class="tag tag-biz" data-biz="recruitment" onclick="selectBiz(this)">招聘</span>
+      <span class="tag tag-biz" data-biz="rental" onclick="selectBiz(this)">房租出租/出售</span>
+      <span class="tag tag-biz" data-biz="2nd-ecom" onclick="selectBiz(this)">二手电商</span>
+      <span class="tag tag-biz" data-biz="2nd-car" onclick="selectBiz(this)">二手车</span>
+    </div>
+  </div>
+
+  <!-- 国家/地区选择 -->
+  <div class="card">
+    <div class="card-title">🌍 选择投放国家/地区</div>
+    <div class="tag-group region-group" id="regionGroup">
+      <span class="region-tag" data-region="india" onclick="selectRegion(this)">🇮🇳 印度</span>
+      <span class="region-tag" data-region="seasia" onclick="selectRegion(this)">🌏 东南亚</span>
+      <span class="region-tag" data-region="africa" onclick="selectRegion(this)">🌍 非洲</span>
+      <span class="region-tag" data-region="middle-east" onclick="selectRegion(this)">🕌 中东</span>
+      <span class="region-tag" data-region="latin-america" onclick="selectRegion(this)">🌎 拉美</span>
+      <span class="region-tag" data-region="europe" onclick="selectRegion(this)">🇪🇺 欧洲</span>
+      <span class="region-tag" data-region="usa" onclick="selectRegion(this)">🇺🇸 美国</span>
+      <span class="region-tag" data-region="australia" onclick="selectRegion(this)">🇦🇺 澳洲</span>
+      <span class="region-tag" data-region="canada" onclick="selectRegion(this)">🇨🇦 加拿大</span>
+    </div>
+    <!-- 国家子选项 -->
+    <div class="country-sub-select" id="countrySubSelect">
+      <div style="font-size:13px;color:#666;margin-bottom:6px;">选择具体国家：</div>
+      <div class="tag-group" id="subCountryTags"></div>
+    </div>
+  </div>
+
+  <!-- 成本目标 -->
+  <div class="card">
+    <div class="card-title">💰 成本目标设置</div>
+    <div class="input-group">
+      <label>每安装成本目标 (CPI / CPC)</label>
+      <input type="text" id="costTarget" placeholder="例如: 0.5（美元）" value="">
+      <div class="input-hint">填入目标CPI/CPC价格（美元），留空则按市场参考价推荐</div>
+    </div>
+    <div class="input-group">
+      <label>预估月投放预算</label>
+      <input type="text" id="budget" placeholder="例如: 10000（美元）" value="">
+      <div class="input-hint">月投放预算（美元），用于匹配厂商合作策略</div>
+    </div>
+  </div>
+
+  <button class="btn-generate" id="genBtn" onclick="generate()">🚀 生成推荐方案</button>
+
+  <!-- 结果区 -->
+  <div class="result-section" id="resultSection">
+    <div style="font-size:14px;font-weight:600;color:#1a1a2e;margin:20px 0 10px;display:flex;align-items:center;gap:6px;">
+      📊 推荐方案 <span id="resultMeta" style="font-size:12px;font-weight:400;color:#888;"></span>
+    </div>
+    <div id="resultContent"></div>
+    <div class="footer-note">数据来源：各品牌商业化平台公开信息 · 成本为行业参考区间</div>
+  </div>
+</div>
+
+<script>
+// ==================== 核心数据 ====================
+const BRANDS = {
+  xiaomi: { name: '小米', platform: 'Mi Ads / 澎湃OS广告平台', icon: '🔴' },
+  oppo: { name: 'OPPO', platform: 'OPPO Ads / Oplus营销平台', icon: '🟢' },
+  vivo: { name: 'vivo', platform: 'vivo营销平台', icon: '🔵' },
+  transsion: { name: '传音', platform: 'Transsion Ads', icon: '🟣' },
+  honor: { name: '荣耀', platform: 'HONOR Ads', icon: '⚪' },
+  huawei: { name: '华为', platform: '华为Ads / HMS生态', icon: '🔶' },
+};
+
+const PLACEMENTS = {
+  xiaomi: [
+    { name: '应用商店(GetApps) - 搜索广告', score: 5, desc: 'App下载、游戏分发' },
+    { name: '浏览器 - 信息流原生广告', score: 5, desc: '品牌曝光、Web转化' },
+    { name: '应用快捷栏(App Vault)', score: 4, desc: '拉活、促转化' },
+    { name: '小米视频 - 前贴片/信息流', score: 4, desc: '视频内容推广' },
+    { name: '锁屏/通知栏 - 系统级推送', score: 4, desc: '强曝光、促活' },
+    { name: '米盟(广告联盟)', score: 4, desc: '矩阵App流量补充' },
+    { name: '小米音乐 - 开屏/插屏', score: 3, desc: '泛娱乐用户触达' },
+    { name: '小米社区 - 信息流/Banner', score: 3, desc: '品牌粉丝运营' },
+  ],
+  oppo: [
+    { name: '软件商店 - 推荐/搜索/Banner', score: 5, desc: 'App下载、游戏' },
+    { name: '浏览器 - 信息流原生/搜索', score: 5, desc: '品牌曝光、获客' },
+    { name: '视频 - 前贴片/信息流', score: 4, desc: '内容推广' },
+    { name: '锁屏/杂志锁屏', score: 4, desc: '品牌曝光' },
+    { name: 'OPPO广告联盟', score: 4, desc: '流量补充' },
+    { name: '主题商店 - Banner', score: 3, desc: '年轻用户触达' },
+  ],
+  vivo: [
+    { name: '应用商店 - 推荐/搜索', score: 5, desc: 'App分发' },
+    { name: '浏览器 - 信息流/搜索', score: 5, desc: '品牌+获客' },
+    { name: 'Jovi智慧场景 - 场景化卡片', score: 4, desc: 'LBS/本地服务' },
+    { name: '锁屏/日历/天气 - 系统级', score: 4, desc: '强曝光' },
+    { name: 'vivo广告联盟', score: 4, desc: '流量补充' },
+    { name: '视频/音乐/阅读 - 内容联动', score: 4, desc: '内容推广' },
+  ],
+  transsion: [
+    { name: 'PalmStore - 推荐/搜索/Banner', score: 5, desc: 'App下载' },
+    { name: 'Phoenix浏览器 - 信息流/搜索', score: 5, desc: '品牌曝光' },
+    { name: 'HiOS/XOS/itelOS系统级 - 锁屏/通知栏', score: 4, desc: '强曝光' },
+    { name: 'Boomplay音乐 - 开屏/信息流', score: 4, desc: '年轻用户触达' },
+    { name: '传音广告联盟', score: 4, desc: '流量补充' },
+  ],
+  honor: [
+    { name: '应用商店 - 推荐/搜索', score: 4, desc: 'App分发' },
+    { name: '浏览器 - 信息流', score: 4, desc: '品牌曝光' },
+    { name: 'MagicOS系统级 - 通知栏/负一屏', score: 4, desc: '强曝光' },
+    { name: '视频/音乐 - 前贴片/信息流', score: 3, desc: '内容推广' },
+  ],
+  huawei: [
+    { name: 'AppGallery - 推荐/搜索/Banner', score: 5, desc: 'App下载' },
+    { name: '锁屏/通知栏 - 系统级', score: 5, desc: '强曝光' },
+    { name: '浏览器 - 信息流/搜索', score: 4, desc: '品牌曝光' },
+    { name: '华为视频/音乐 - 前贴片', score: 4, desc: '内容推广' },
+    { name: 'Push推送', score: 4, desc: '促活' },
+    { name: '华为广告联盟', score: 4, desc: '流量补充' },
+  ],
+};
+
+// 各品牌×区域 市场份额排名与匹配度
+const REGION_DATA = {
+  india: {
+    name: '印度', countries: ['印度'],
+    brands: {
+      vivo: { share: '21%', rank: '🥇第1', match: 'high', desc: '连续两年年/季冠军' },
+      oppo: { share: '15%', rank: '🥉第3', match: 'high', desc: 'Q4出货460万台' },
+      xiaomi: { share: '12%', rank: '前五', match: 'high', desc: 'Q4出货380万' },
+      transsion: { share: '-', rank: '非主力', match: 'low', desc: '印度非核心市场' },
+      honor: { share: '-', rank: '新进入', match: 'low', desc: '起步阶段' },
+      huawei: { share: '-', rank: '受限', match: 'low', desc: '受制裁影响' },
+    },
+    cpi: { low: 0.15, high: 0.50 },
+    bizFocus: { recruitment: 'vivo', rental: 'vivo', '2nd-ecom': 'oppo', '2nd-car': 'vivo' },
+    bizPlacements: { recruitment: ['应用商店 - 推荐/搜索', '浏览器 - 信息流/搜索'], rental: ['Jovi智慧场景 - 场景化卡片', '锁屏/日历/天气 - 系统级'], '2nd-ecom': ['应用商店 - 推荐/搜索', '浏览器 - 信息流/搜索'], '2nd-car': ['Jovi智慧场景 - 场景化卡片', '应用商店 - 推荐/搜索'] },
+  },
+  seasia: {
+    name: '东南亚', countries: ['印度尼西亚', '泰国', '越南', '马来西亚', '菲律宾'],
+    brands: {
+      xiaomi: { share: '17%', rank: '第2', match: 'high', desc: '全年1700万部' },
+      oppo: { share: '15%', rank: '第4', match: 'high', desc: '全年1470万部' },
+      transsion: { share: '16%', rank: '第3', match: 'high', desc: '菲律宾第1' },
+      vivo: { share: '12%', rank: '第5', match: 'medium', desc: '全年1190万部' },
+      honor: { share: '-', rank: '增长中', match: 'medium', desc: '马来西亚18.6%' },
+      huawei: { share: '-', rank: '稳步恢复', match: 'medium', desc: '亚太区恢复中' },
+    },
+    cpi: { low: 0.20, high: 0.80 },
+    bizFocus: { recruitment: 'xiaomi', rental: 'oppo', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
+    bizPlacements: { recruitment: ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], rental: ['软件商店 - 推荐/搜索/Banner', '应用快捷栏(App Vault)'], '2nd-ecom': ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], '2nd-car': ['浏览器 - 信息流原生广告', '锁屏/通知栏 - 系统级推送'] },
+  },
+  africa: {
+    name: '非洲', countries: ['尼日利亚', '肯尼亚', '南非', '埃及', '加纳'],
+    brands: {
+      transsion: { share: '48%', rank: '🥇第1', match: 'high', desc: '非洲之王' },
+      xiaomi: { share: '13%', rank: '🥉第3', match: 'high', desc: '全年1070万部' },
+      honor: { share: '4%', rank: '高速增长', match: 'medium', desc: '+101%增速' },
+      oppo: { share: '4%', rank: '第5', match: 'medium', desc: '全年340万部' },
+      vivo: { share: '-', rank: '拓展中', match: 'low', desc: '北非布局' },
+      huawei: { share: '-', rank: '恢复中', match: 'low', desc: '有限覆盖' },
+    },
+    cpi: { low: 0.10, high: 0.40 },
+    bizFocus: { recruitment: 'transsion', rental: 'transsion', '2nd-ecom': 'transsion', '2nd-car': 'transsion' },
+    bizPlacements: { recruitment: ['PalmStore - 推荐/搜索/Banner', 'Phoenix浏览器 - 信息流/搜索'], rental: ['HiOS/XOS/itelOS系统级 - 锁屏/通知栏', 'PalmStore - 推荐/搜索/Banner'], '2nd-ecom': ['PalmStore - 推荐/搜索/Banner', 'Phoenix浏览器 - 信息流/搜索'], '2nd-car': ['HiOS/XOS/itelOS系统级 - 锁屏/通知栏', 'Boomplay音乐 - 开屏/信息流'] },
+  },
+  'middle-east': {
+    name: '中东', countries: ['沙特阿拉伯', '阿联酋', '卡塔尔', '科威特', '以色列'],
+    brands: {
+      honor: { share: '18%', rank: '🥈第2', match: 'high', desc: '+73%增长' },
+      transsion: { share: '12%', rank: '🥉第3', match: 'high', desc: '全年840万部' },
+      xiaomi: { share: '11%', rank: '第4', match: 'medium', desc: '全年+35%' },
+      huawei: { share: '-', rank: '高端第2', match: 'medium', desc: '三折叠+卫星通信' },
+      oppo: { share: '-', rank: '一般', match: 'low', desc: '非核心市场' },
+      vivo: { share: '-', rank: '一般', match: 'low', desc: '非核心市场' },
+    },
+    cpi: { low: 0.30, high: 1.00 },
+    bizFocus: { recruitment: 'honor', rental: 'xiaomi', '2nd-ecom': 'transsion', '2nd-car': 'honor' },
+    bizPlacements: { recruitment: ['应用商店 - 推荐/搜索', '浏览器 - 信息流'], rental: ['浏览器 - 信息流原生广告', '应用商店(GetApps) - 搜索广告'], '2nd-ecom': ['Phoenix浏览器 - 信息流/搜索', 'PalmStore - 推荐/搜索/Banner'], '2nd-car': ['MagicOS系统级 - 通知栏/负一屏', '浏览器 - 信息流'] },
+  },
+  'latin-america': {
+    name: '拉美', countries: ['巴西', '墨西哥', '哥伦比亚', '阿根廷', '智利'],
+    brands: {
+      xiaomi: { share: '17.5%', rank: '第2', match: 'high', desc: '哥伦比亚连续4年第1' },
+      honor: { share: '10%', rank: '第4', match: 'high', desc: '+30%增长' },
+      transsion: { share: '6%', rank: '第5', match: 'medium', desc: '全年890万部' },
+      oppo: { share: '-', rank: '新市场', match: 'medium', desc: '墨西哥+23%' },
+      vivo: { share: '-', rank: '拓展中', match: 'low', desc: 'JOVI子品牌巴西' },
+      huawei: { share: '-', rank: '恢复中', match: 'low', desc: '有限覆盖' },
+    },
+    cpi: { low: 0.25, high: 0.80 },
+    bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'honor', '2nd-car': 'xiaomi' },
+    bizPlacements: { recruitment: ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], rental: ['锁屏/通知栏 - 系统级推送', '应用商店(GetApps) - 搜索广告'], '2nd-ecom': ['应用商店 - 推荐/搜索', '浏览器 - 信息流'], '2nd-car': ['锁屏/通知栏 - 系统级推送', '应用商店(GetApps) - 搜索广告'] },
+  },
+  usa: {
+    name: '美国', countries: ['美国'],
+    brands: {
+      xiaomi: { share: '~2%', rank: '极有限', match: 'low', desc: '无运营商合作,线上渠道为主' },
+      oppo: { share: '-', rank: '无存在', match: 'low', desc: '未进入美国市场' },
+      vivo: { share: '-', rank: '无存在', match: 'low', desc: '未进入美国市场' },
+      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入美国市场' },
+      honor: { share: '-', rank: '无存在', match: 'low', desc: '受制裁限制' },
+      huawei: { share: '-', rank: '受限', match: 'low', desc: '受美国制裁' },
+    },
+    cpi: { low: 1.50, high: 4.00 },
+    note: '中国手机厂商在美国市场基本无商业化广告资源覆盖。建议优先使用Facebook/Google/Apple Search Ads等公开渠道',
+    bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
+    bizPlacements: { recruitment: [], rental: [], '2nd-ecom': [], '2nd-car': [] },
+  },
+  australia: {
+    name: '澳洲', countries: ['澳大利亚'],
+    brands: {
+      xiaomi: { share: '~3%', rank: '有限', match: 'low', desc: '线上+JB Hi-Fi渠道' },
+      oppo: { share: '~2%', rank: '有限', match: 'low', desc: '小规模存在' },
+      honor: { share: '-', rank: '极有限', match: 'low', desc: '尚未建立渠道' },
+      vivo: { share: '-', rank: '有限', match: 'low', desc: '未重点布局' },
+      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入' },
+      huawei: { share: '-', rank: '受限', match: 'low', desc: '受制裁影响' },
+    },
+    cpi: { low: 1.00, high: 3.00 },
+    note: '澳洲市场中国厂商覆盖有限，小米有一定的线上用户基础但缺乏系统级广告资源',
+    bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
+    bizPlacements: { recruitment: [], rental: [], '2nd-ecom': [], '2nd-car': [] },
+  },
+  canada: {
+    name: '加拿大', countries: ['加拿大'],
+    brands: {
+      xiaomi: { share: '~2%', rank: '极有限', match: 'low', desc: '无运营商合作' },
+      oppo: { share: '-', rank: '无存在', match: 'low', desc: '未进入加拿大市场' },
+      vivo: { share: '-', rank: '无存在', match: 'low', desc: '未进入加拿大市场' },
+      transsion: { share: '-', rank: '无存在', match: 'low', desc: '未进入加拿大市场' },
+      honor: { share: '-', rank: '无存在', match: 'low', desc: '未建立渠道' },
+      huawei: { share: '-', rank: '受限', match: 'low', desc: '受制裁影响' },
+    },
+    cpi: { low: 1.50, high: 3.50 },
+    note: '加拿大市场中国厂商基本无系统级广告资源，建议使用Google Ads/Facebook Ads等公开渠道',
+    bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
+    bizPlacements: { recruitment: [], rental: [], '2nd-ecom': [], '2nd-car': [] },
+  },
+  europe: {
+    name: '欧洲', countries: ['德国', '法国', '英国', '意大利', '西班牙', '俄罗斯'],
+    brands: {
+      xiaomi: { share: '20.3%', rank: '🥉第3', match: 'high', desc: '俄罗斯第1,西欧稳固' },
+      honor: { share: '-', rank: '前五', match: 'medium', desc: '首次进入前五' },
+      huawei: { share: '-', rank: '恢复中', match: 'medium', desc: '+120%YOY' },
+      oppo: { share: '-', rank: '多国前五', match: 'medium', desc: '葡萄牙第2' },
+      transsion: { share: '-', rank: '有限', match: 'low', desc: '非核心市场' },
+      vivo: { share: '-', rank: '有限', match: 'low', desc: '非核心' },
+    },
+    cpi: { low: 0.50, high: 2.00 },
+    bizFocus: { recruitment: 'xiaomi', rental: 'xiaomi', '2nd-ecom': 'xiaomi', '2nd-car': 'xiaomi' },
+    bizPlacements: { recruitment: ['浏览器 - 信息流原生广告', '米盟(广告联盟)'], rental: ['浏览器 - 信息流原生广告', '小米视频 - 前贴片/信息流'], '2nd-ecom': ['应用商店(GetApps) - 搜索广告', '浏览器 - 信息流原生广告'], '2nd-car': ['锁屏/通知栏 - 系统级推送', '小米视频 - 前贴片/信息流'] },
+  },
+};
+
+const BIZ_NAMES = { recruitment: '招聘', rental: '房租出租/出售', '2nd-ecom': '二手电商', '2nd-car': '二手车' };
+const BIZ_ICONS = { recruitment: '💼', rental: '🏠', '2nd-ecom': '🛒', '2nd-car': '🚗' };
+const BIZ_DESC = {
+  recruitment: '需要大量下载转化+表单提交，适合应用商店搜索广告+信息流广覆盖',
+  rental: 'LBS定向+本地化强曝光需求，适合系统级推送+场景化卡片投放',
+  '2nd-ecom': '强依赖下载转化+平台信任建设，适合应用商店+浏览器组合投放',
+  '2nd-car': '高客单价商品，需要品牌信任+精准人群触达，适合强曝光+搜索组合',
+};
+
+// ==================== 交互逻辑 ====================
+let selectedBiz = null, selectedRegion = null, selectedCountry = null;
+
+function selectBiz(el) {
+  document.querySelectorAll('.tag-biz').forEach(t => { t.classList.remove('active', 'active-recruitment', 'active-rental', 'active-2nd-ecom', 'active-2nd-car'); });
+  el.classList.add('active');
+  el.classList.add('active-' + el.dataset.biz);
+  selectedBiz = el.dataset.biz;
+  document.getElementById('resultSection').style.display = 'none';
+}
+
+function selectRegion(el) {
+  document.querySelectorAll('.region-tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  selectedRegion = el.dataset.region;
+  selectedCountry = null;
+  // 更新子国家选项
+  const subDiv = document.getElementById('countrySubSelect');
+  const subContainer = document.getElementById('subCountryTags');
+  const region = REGION_DATA[selectedRegion];
+  if (region && region.countries.length > 1) {
+    subContainer.innerHTML = region.countries.map(c =>
+      `<span class="country-sub-tag" onclick="selectSubCountry(this,'${c}')">${c}</span>`
+    ).join('');
+    subDiv.classList.add('show');
+  } else {
+    subDiv.classList.remove('show');
+    if (region) selectedCountry = region.countries[0];
+  }
+  document.getElementById('resultSection').style.display = 'none';
+}
+
+function selectSubCountry(el, country) {
+  document.querySelectorAll('.country-sub-tag').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  selectedCountry = country;
+}
+
+// ==================== 推荐引擎 ====================
+function generate() {
+  if (!selectedBiz || !selectedRegion) {
+    alert('请先选择业务类型和投放地区');
+    return;
+  }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '⏳ 正在分析...';
+  document.getElementById('resultSection').style.display = 'none';
+
+  setTimeout(() => {
+    const result = doGenerate();
+    renderResult(result);
+    btn.disabled = false;
+    btn.textContent = '🚀 生成推荐方案';
+    document.getElementById('resultSection').style.display = 'block';
+    document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 400);
+}
+
+function doGenerate() {
+  const region = REGION_DATA[selectedRegion];
+  const biz = selectedBiz;
+  const costTarget = parseFloat(document.getElementById('costTarget').value) || null;
+  const budget = parseFloat(document.getElementById('budget').value) || 0;
+
+  // 判断是否为低覆盖市场（美国/澳洲/加拿大）
+  const isLowCoverage = region.note && Object.values(region.brands).every(b => b.match === 'low');
+
+  // 1. 按匹配度排序品牌
+  const brandEntries = Object.entries(region.brands)
+    .filter(([_, info]) => isLowCoverage || info.match !== 'low')
+    .sort((a, b) => {
+      const order = { high: 3, medium: 2, low: 1 };
+      return order[b[1].match] - order[a[1].match];
+    });
+
+  // 2. 对每个品牌计算推荐版位
+  const recommendations = brandEntries.map(([key, info]) => {
+    const brand = BRANDS[key];
+    const allPlacements = PLACEMENTS[key] || [];
+
+    // 低覆盖市场特殊处理
+    if (isLowCoverage && (info.match === 'low')) {
+      return { key, brand, info, noPlatform: true, advice: region.note };
+    }
+
+    // 业务类型优先推荐版位
+    const bizPreferred = (region.bizPlacements && region.bizPlacements[biz]) || [];
+    let placements;
+    if (bizPreferred.length > 0) {
+      placements = allPlacements.filter(p =>
+        bizPreferred.some(bp => p.name.includes(bp.replace(/[^\u4e00-\u9fa5a-zA-Z]/g, '').slice(0,4)))
+      );
+      if (placements.length === 0) placements = allPlacements.slice(0, 4);
+    } else {
+      placements = allPlacements.slice(0, 4);
+    }
+
+    // 过滤成本
+    const regionCPI = region.cpi || { low: 0.2, high: 1.0 };
+    if (costTarget && costTarget < regionCPI.low) {
+      // 成本目标低于市场价 → 推荐更廉价渠道
+      placements = placements.filter(p => p.score <= 4);
+    }
+    if (placements.length === 0) placements = allPlacements.slice(0, 2);
+
+    // 交易成本估算（业务类型相关）
+    const bizCostMultiplier = { recruitment: 0.3, rental: 1.5, '2nd-ecom': 0.5, '2nd-car': 3.0 };
+    const transactionCost = (regionCPI.low + regionCPI.high) / 2 * (bizCostMultiplier[biz] || 1);
+
+    // 投放建议
+    let advice = '';
+    const budgetLevel = budget > 20000 ? 'large' : budget > 5000 ? 'medium' : 'small';
+    switch (key) {
+      case 'xiaomi':
+        advice = `小米是${region.name}市场主流渠道，覆盖广、用户量大。推荐采用「应用商店搜索+浏览器信息流」组合投放，`;
+        advice += budgetLevel === 'large' ? '适合大规模买量，建议签订年度框架争取返点。' : budgetLevel === 'medium' ? '建议聚焦核心城市精细化投放。' : '建议从浏览器信息流起步，控制测试预算。';
+        break;
+      case 'oppo':
+        advice = `OPPO用户群体偏年轻化，在${region.name}市场与电商、社交类产品匹配度高。推荐以软件商店为核心，`;
+        advice += biz === '2nd-ecom' ? '电商类产品可叠加OPPO广告联盟补充流量。' : '可叠加浏览器信息流扩大覆盖面。';
+        break;
+      case 'vivo':
+        advice = `vivo在${region.name}市场线下优势领先，推荐「应用商店+Jovi场景」组合。`;
+        advice += biz === 'rental' ? 'Jovi智慧场景的LBS能力精准匹配租房、本地服务类投放需求。' : 'Jovi场景化卡片有助于提升转化率。';
+        break;
+      case 'transsion':
+        advice = `传音在${region.name}市场具有统治力覆盖，PalmStore是必投渠道。推荐采用「PalmStore搜索+Boomplay音乐」组合触达年轻用户，`;
+        advice += budgetLevel === 'large' ? '建议争取系统级锁屏流量。' : '聚焦应用商店搜索广告控制成本。';
+        break;
+      case 'honor':
+        advice = `荣耀在${region.name}正处于高速增长期，渠道成本相对较低。推荐优先布局应用商店和浏览器，`;
+        advice += '当前窗口期适合提前锁定低价流量。建议与荣耀建立季度框架合作。';
+        break;
+      case 'huawei':
+        advice = `华为在${region.name}市场处于恢复阶段，用户偏高端。推荐AppGallery+锁屏强曝光组合，`;
+        advice += '适合品牌建设类投放而非纯效果买量。';
+        break;
+    }
+
+    return {
+      key, brand, info, placements,
+      cpiRange: `$${regionCPI.low.toFixed(2)}-${regionCPI.high.toFixed(2)}`,
+      avgCpi: ((regionCPI.low + regionCPI.high) / 2).toFixed(2),
+      transactionCost: transactionCost.toFixed(2),
+      advice
+    };
+  });
+
+  // 按匹配度+业务适配度排序
+  const order = { high: 0, medium: 1, low: 2 };
+  recommendations.sort((a, b) => order[a.info.match] - order[b.info.match]);
+
+  return {
+    region: region.name,
+    country: selectedCountry || region.countries[0],
+    biz: BIZ_NAMES[biz],
+    bizIcon: BIZ_ICONS[biz],
+    bizDesc: BIZ_DESC[biz],
+    costTarget,
+    budget,
+    recommendations
+  };
+}
+
+function renderResult(data) {
+  const meta = document.getElementById('resultMeta');
+  meta.textContent = `· ${data.bizIcon} ${data.biz} · ${data.country || data.region}`;
+
+  let html = '';
+  data.recommendations.forEach((r, idx) => {
+    // 低覆盖市场 - 无厂商广告资源
+    if (r.noPlatform) {
+      html += `<div class="result-card">
+        <div class="result-header">
+          <span class="brand-name">${r.brand.icon} ${r.brand.name}</span>
+          <span class="brand-match match-low">无可用</span>
+        </div>
+        <div class="result-body">
+          <div style="font-size:12px;color:#888;margin-bottom:8px;">${r.info.rank} · ${r.info.share}份额 · ${r.info.desc}</div>
+          <div class="advice-box" style="background:#fff3e0;color:#bf6d00;"><strong>⚠️ 无系统级广告资源</strong><br>${r.advice}</div>
+        </div>
+      </div>`;
+      return;
+    }
+
+    const matchLabel = r.info.match === 'high' ? '强烈推荐' : (r.info.match === 'medium' ? '推荐' : '可选');
+    const matchClass = r.info.match === 'high' ? 'match-high' : 'match-medium';
+    const totalScore = r.placements.reduce((s,p)=>s+p.score,0);
+    const avgScore = r.placements.length > 0 ? totalScore / r.placements.length : 0;
+    const stars = '⭐'.repeat(Math.min(Math.ceil(avgScore), 5));
+
+    html += `<div class="result-card">
+      <div class="result-header">
+        <span class="brand-name">${r.brand.icon} ${r.brand.name}</span>
+        <span class="brand-match ${matchClass}">${matchLabel}</span>
+      </div>
+      <div class="result-body">
+        <div style="font-size:12px;color:#888;margin-bottom:8px;">
+          ${r.brand.platform} · ${r.info.rank} · ${r.info.share}份额 · ${r.info.desc}
+        </div>
+        <div class="result-section-title">📌 推荐资源版位 ${stars}</div>
+        <ul class="placement-list">
+          ${r.placements.map(p => `<li class="placement-item"><span class="placement-name">· ${p.name}</span><span class="placement-score">${'⭐'.repeat(p.score)}</span></li>`).join('')}
+        </ul>
+        <div class="result-section-title">💰 成本估算</div>
+        <div class="cost-row">
+          <div class="cost-box"><div class="label">流量成本(CPI/CPC)</div><div class="value">${r.cpiRange}</div><div class="sub">/次安装或点击</div></div>
+          <div class="cost-box"><div class="label">预估转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单或线索</div></div>
+        </div>
+        <div class="advice-box"><strong>🎯 投放建议</strong><br>${r.advice}</div>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById('resultContent').innerHTML = html;
+}
+</script>
+</body>
+</html>
