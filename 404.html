@@ -116,6 +116,11 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
       <div class="input-hint">填入目标CPC价格（美元），留空则按市场参考价推荐</div>
     </div>
     <div class="input-group">
+      <label>线索收集成本目标 (CPL) 非必填</label>
+      <input type="text" id="cplTarget" placeholder="例如: 5（美元，每条线索）" value="">
+      <div class="input-hint">如做表单填写类线索收集投放，填入目标CPL（美元），用于筛选渠道</div>
+    </div>
+    <div class="input-group">
       <label>预估月投放预算</label>
       <input type="text" id="budget" placeholder="例如: 10000（美元）" value="">
       <div class="input-hint">月投放预算（美元），用于匹配厂商合作策略</div>
@@ -448,6 +453,9 @@ function doGenerate() {
     const avgCpc = (regionCPI.low + regionCPI.high) / 2;
     // 网站UV预估成本 = CPC × 重复点击系数（约30%用户重复点击）
     const uvCost = avgCpc * 1.3;
+    // 线索成本（表单填写）预估 = CPC ÷ 预估转化率
+    const cplConversionRate = { recruitment: 0.08, rental: 0.05, '2nd-ecom': 0.10, '2nd-car': 0.03 };
+    const leadCost = avgCpc / (cplConversionRate[biz] || 0.05);
     // 交易成本估算（业务类型相关）
     const bizCostMultiplier = { recruitment: 0.3, rental: 1.5, '2nd-ecom': 0.5, '2nd-car': 3.0 };
     const transactionCost = avgCpc * (bizCostMultiplier[biz] || 1);
@@ -487,6 +495,7 @@ function doGenerate() {
       cpcRange: `$${regionCPI.low.toFixed(2)}-${regionCPI.high.toFixed(2)}`,
       avgCpc: avgCpc.toFixed(2),
       uvCost: uvCost.toFixed(2),
+      leadCost: leadCost.toFixed(2),
       transactionCost: transactionCost.toFixed(2),
       // 效果预估
       dailyUV: budget > 0 ? Math.round((budget / 30) / uvCost) : Math.round(1000 / uvCost * 50),
@@ -555,7 +564,8 @@ function renderResult(data) {
         <div class="cost-row">
           <div class="cost-box"><div class="label">CPC成本</div><div class="value">${r.cpcRange}</div><div class="sub">/次点击</div></div>
           <div class="cost-box"><div class="label">网站UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div>
-          <div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单或线索</div></div>
+          <div class="cost-box"><div class="label">线索成本(CPL)</div><div class="value">$${r.leadCost}</div><div class="sub">/条表单线索</div></div>
+          <div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单</div></div>
         </div>
         <div class="result-section-title">📈 效果预估</div>
         <div class="cost-row">
