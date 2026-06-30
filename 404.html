@@ -420,7 +420,7 @@ function doGenerate() {
     });
 
   // 2. 对每个品牌计算推荐版位
-  const recommendations = brandEntries.map(([key, info]) => {
+  let recommendations = brandEntries.map(([key, info]) => {
     const brand = BRANDS[key];
     const allPlacements = PLACEMENTS[key] || [];
 
@@ -510,23 +510,44 @@ function doGenerate() {
   const order = { high: 0, medium: 1, low: 2 };
   recommendations.sort((a, b) => order[a.info.match] - order[b.info.match]);
 
-  // 预算分配：按匹配度权重分配总预算
+  // ===== 升级版预算分配算法：基于多因子评分 =====
+  // 因子1：市场占有率（品牌在该地区的精确出货份额）
+  // 因子2：业务匹配系数（该品牌是否为此业务类型的首选推荐）
+  // 因子3：排名加成（市场第1/第2的额外权重）
+  function parseSharePct(shareStr) {
+    if (!shareStr || shareStr === '-') return 0;
+    const m = shareStr.match(/(\d+(?:\.\d+)?)%/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+  function computeScore(key, info, biz, region) {
+    const sharePct = parseSharePct(info.share);
+    // 业务匹配：bizFocus指定的首选品牌+0.3，其他high匹配+0.1
+    const focus = region.bizFocus && region.bizFocus[biz];
+    const bizBonus = focus === key ? 0.3 : (info.match === 'high' ? 0.1 : 0);
+    // 排名加成：市场第1+0.15，第2+0.08
+    const rankBonus = info.rank.includes('🥇') ? 0.15 : info.rank.includes('🥈') ? 0.08 : 0;
+    // 综合评分 = 市占率 × (1 + 业务匹配 + 排名加成)
+    return (sharePct / 100) * (1 + bizBonus + rankBonus);
+  }
+  // 先算分再分配
   if (budget > 0) {
-    const weightMap = { high: 0.55, medium: 0.30, low: 0.15 };
-    const totalWeight = recommendations.reduce((s, r) => s + (weightMap[r.info.match] || 0.15), 0);
-    recommendations.forEach(r => {
-      const weight = weightMap[r.info.match] || 0.15;
-      r.allocatedBudget = Math.round(budget * weight / totalWeight);
-      const cpc = parseFloat(r.avgCpc);
-      const uv = parseFloat(r.uvCost);
-      const lead = parseFloat(r.leadCost);
-      if (cpc > 0) {
-        r.monthlyClicks = Math.round(r.allocatedBudget / cpc);
-        r.monthlyUV = Math.round(r.allocatedBudget / uv);
-        r.dailyUV = Math.round(r.monthlyUV / 30);
-        r.monthlyLeads = lead > 0 ? Math.round(r.allocatedBudget / lead) : 0;
-      }
-    });
+    const scored = recommendations.map(r => ({ ...r, score: computeScore(r.key, r.info, biz, region) }));
+    const totalScore = scored.reduce((s, r) => s + r.score, 0);
+    if (totalScore > 0) {
+      scored.forEach(r => {
+        r.allocatedBudget = Math.round(budget * r.score / totalScore);
+        const cpc = parseFloat(r.avgCpc);
+        const uv = parseFloat(r.uvCost);
+        const lead = parseFloat(r.leadCost);
+        if (cpc > 0) {
+          r.monthlyClicks = Math.round(r.allocatedBudget / cpc);
+          r.monthlyUV = Math.round(r.allocatedBudget / uv);
+          r.dailyUV = Math.round(r.monthlyUV / 30);
+          r.monthlyLeads = lead > 0 ? Math.round(r.allocatedBudget / lead) : 0;
+        }
+      });
+    }
+    recommendations = scored;
   }
 
   return {
