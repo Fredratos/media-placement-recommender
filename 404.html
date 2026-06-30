@@ -98,7 +98,7 @@ body,html { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetic
     <div class="card-title">🎯 选择业务类型</div>
     <div class="tag-group" id="bizGroup">
       <span class="tag tag-biz" data-biz="recruitment" onclick="selectBiz(this)">招聘</span>
-      <span class="tag tag-biz" data-biz="rental" onclick="selectBiz(this)">房租出租/出售</span>
+      <span class="tag tag-biz" data-biz="rental" onclick="selectBiz(this)">二手房</span>
       <span class="tag tag-biz" data-biz="2nd-ecom" onclick="selectBiz(this)">二手电商</span>
       <span class="tag tag-biz" data-biz="2nd-car" onclick="selectBiz(this)">二手车</span>
     </div>
@@ -556,7 +556,7 @@ const REGION_DATA = {
   },
 };
 
-const BIZ_NAMES={recruitment:'招聘',rental:'房租出租/出售','2nd-ecom':'二手电商','2nd-car':'二手车'};
+const BIZ_NAMES={recruitment:'招聘',rental:'二手房','2nd-ecom':'二手电商','2nd-car':'二手车'};
 const BIZ_ICONS={recruitment:'💼',rental:'🏠','2nd-ecom':'🛒','2nd-car':'🚗'};
 const CONV_RATES={recruitment:0.08,rental:0.05,'2nd-ecom':0.10,'2nd-car':0.03};
 const TXN_MULT={recruitment:0.3,rental:1.5,'2nd-ecom':0.5,'2nd-car':3.0};
