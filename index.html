@@ -121,9 +121,9 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
       <div class="input-hint">如做表单填写类线索收集投放，填入目标CPL（美元），用于筛选渠道</div>
     </div>
     <div class="input-group">
-      <label>预估月投放预算</label>
+      <label>总预算</label>
       <input type="text" id="budget" placeholder="例如: 10000（美元）" value="">
-      <div class="input-hint">月投放预算（美元），用于匹配厂商合作策略</div>
+      <div class="input-hint">总预算（美元），系统会按品牌匹配度自动分配预算</div>
     </div>
   </div>
 
@@ -497,16 +497,37 @@ function doGenerate() {
       uvCost: uvCost.toFixed(2),
       leadCost: leadCost.toFixed(2),
       transactionCost: transactionCost.toFixed(2),
-      // 效果预估
-      dailyUV: budget > 0 ? Math.round((budget / 30) / uvCost) : Math.round(1000 / uvCost * 50),
-      monthlyUV: budget > 0 ? Math.round(budget / uvCost) : Math.round(1000 / uvCost * 1500),
+      allocatedBudget: 0,
+      dailyUV: 0,
+      monthlyUV: 0,
+      monthlyClicks: 0,
+      monthlyLeads: 0,
       advice
     };
   });
 
-  // 按匹配度+业务适配度排序
+  // 按匹配度排序
   const order = { high: 0, medium: 1, low: 2 };
   recommendations.sort((a, b) => order[a.info.match] - order[b.info.match]);
+
+  // 预算分配：按匹配度权重分配总预算
+  if (budget > 0) {
+    const weightMap = { high: 0.55, medium: 0.30, low: 0.15 };
+    const totalWeight = recommendations.reduce((s, r) => s + (weightMap[r.info.match] || 0.15), 0);
+    recommendations.forEach(r => {
+      const weight = weightMap[r.info.match] || 0.15;
+      r.allocatedBudget = Math.round(budget * weight / totalWeight);
+      const cpc = parseFloat(r.avgCpc);
+      const uv = parseFloat(r.uvCost);
+      const lead = parseFloat(r.leadCost);
+      if (cpc > 0) {
+        r.monthlyClicks = Math.round(r.allocatedBudget / cpc);
+        r.monthlyUV = Math.round(r.allocatedBudget / uv);
+        r.dailyUV = Math.round(r.monthlyUV / 30);
+        r.monthlyLeads = lead > 0 ? Math.round(r.allocatedBudget / lead) : 0;
+      }
+    });
+  }
 
   return {
     region: region.name,
@@ -563,15 +584,17 @@ function renderResult(data) {
         <div class="result-section-title">💰 成本估算</div>
         <div class="cost-row">
           <div class="cost-box"><div class="label">CPC成本</div><div class="value">${r.cpcRange}</div><div class="sub">/次点击</div></div>
-          <div class="cost-box"><div class="label">网站UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div>
+          <div class="cost-box"><div class="label">UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div>
           <div class="cost-box"><div class="label">线索成本(CPL)</div><div class="value">$${r.leadCost}</div><div class="sub">/条表单线索</div></div>
           <div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单</div></div>
         </div>
-        <div class="result-section-title">📈 效果预估</div>
+        ${r.allocatedBudget > 0 ? `<div class="result-section-title">📈 预算分配与效果预估</div>
         <div class="cost-row">
+          <div class="cost-box" style="background:#e8f5e9;"><div class="label">分配预算</div><div class="value" style="color:#2e7d32;">$${r.allocatedBudget.toLocaleString()}</div><div class="sub">占总预算${Math.round(r.allocatedBudget / data.budget * 100)}%</div></div>
+          <div class="cost-box"><div class="label">预估月点击</div><div class="value">${r.monthlyClicks.toLocaleString()}</div><div class="sub">次</div></div>
           <div class="cost-box"><div class="label">预估日均UV</div><div class="value">${r.dailyUV.toLocaleString()}</div><div class="sub">独立访客/天</div></div>
-          <div class="cost-box"><div class="label">预估月UV总量</div><div class="value">${r.monthlyUV.toLocaleString()}</div><div class="sub">独立访客/月</div></div>
-        </div>
+          <div class="cost-box"><div class="label">预估月线索</div><div class="value">${r.monthlyLeads.toLocaleString()}</div><div class="sub">条表单</div></div>
+        </div>` : ''}
         <div class="advice-box"><strong>🎯 投放建议</strong><br>${r.advice}</div>
       </div>
     </div>`;
