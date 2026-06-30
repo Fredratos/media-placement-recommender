@@ -488,6 +488,9 @@ function doGenerate() {
       avgCpc: avgCpc.toFixed(2),
       uvCost: uvCost.toFixed(2),
       transactionCost: transactionCost.toFixed(2),
+      // 效果预估
+      dailyUV: budget > 0 ? Math.round((budget / 30) / uvCost) : Math.round(1000 / uvCost * 50),
+      monthlyUV: budget > 0 ? Math.round(budget / uvCost) : Math.round(1000 / uvCost * 1500),
       advice
     };
   });
@@ -553,6 +556,11 @@ function renderResult(data) {
           <div class="cost-box"><div class="label">CPC成本</div><div class="value">${r.cpcRange}</div><div class="sub">/次点击</div></div>
           <div class="cost-box"><div class="label">网站UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div>
           <div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单或线索</div></div>
+        </div>
+        <div class="result-section-title">📈 效果预估</div>
+        <div class="cost-row">
+          <div class="cost-box"><div class="label">预估日均UV</div><div class="value">${r.dailyUV.toLocaleString()}</div><div class="sub">独立访客/天</div></div>
+          <div class="cost-box"><div class="label">预估月UV总量</div><div class="value">${r.monthlyUV.toLocaleString()}</div><div class="sub">独立访客/月</div></div>
         </div>
         <div class="advice-box"><strong>🎯 投放建议</strong><br>${r.advice}</div>
       </div>
