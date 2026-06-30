@@ -111,9 +111,9 @@ body, html { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hel
   <div class="card">
     <div class="card-title">💰 成本目标设置</div>
     <div class="input-group">
-      <label>每安装成本目标 (CPI / CPC)</label>
+      <label>广告点击成本目标 (CPC)</label>
       <input type="text" id="costTarget" placeholder="例如: 0.5（美元）" value="">
-      <div class="input-hint">填入目标CPI/CPC价格（美元），留空则按市场参考价推荐</div>
+      <div class="input-hint">填入目标CPC价格（美元），留空则按市场参考价推荐</div>
     </div>
     <div class="input-group">
       <label>预估月投放预算</label>
@@ -444,9 +444,13 @@ function doGenerate() {
     }
     if (placements.length === 0) placements = allPlacements.slice(0, 2);
 
+    // CPC 市场中间价
+    const avgCpc = (regionCPI.low + regionCPI.high) / 2;
+    // 网站UV预估成本 = CPC × 重复点击系数（约30%用户重复点击）
+    const uvCost = avgCpc * 1.3;
     // 交易成本估算（业务类型相关）
     const bizCostMultiplier = { recruitment: 0.3, rental: 1.5, '2nd-ecom': 0.5, '2nd-car': 3.0 };
-    const transactionCost = (regionCPI.low + regionCPI.high) / 2 * (bizCostMultiplier[biz] || 1);
+    const transactionCost = avgCpc * (bizCostMultiplier[biz] || 1);
 
     // 投放建议
     let advice = '';
@@ -480,8 +484,9 @@ function doGenerate() {
 
     return {
       key, brand, info, placements,
-      cpiRange: `$${regionCPI.low.toFixed(2)}-${regionCPI.high.toFixed(2)}`,
-      avgCpi: ((regionCPI.low + regionCPI.high) / 2).toFixed(2),
+      cpcRange: `$${regionCPI.low.toFixed(2)}-${regionCPI.high.toFixed(2)}`,
+      avgCpc: avgCpc.toFixed(2),
+      uvCost: uvCost.toFixed(2),
       transactionCost: transactionCost.toFixed(2),
       advice
     };
@@ -545,8 +550,9 @@ function renderResult(data) {
         </ul>
         <div class="result-section-title">💰 成本估算</div>
         <div class="cost-row">
-          <div class="cost-box"><div class="label">流量成本(CPI/CPC)</div><div class="value">${r.cpiRange}</div><div class="sub">/次安装或点击</div></div>
-          <div class="cost-box"><div class="label">预估转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单或线索</div></div>
+          <div class="cost-box"><div class="label">CPC成本</div><div class="value">${r.cpcRange}</div><div class="sub">/次点击</div></div>
+          <div class="cost-box"><div class="label">网站UV预估成本</div><div class="value">$${r.uvCost}</div><div class="sub">/独立访客</div></div>
+          <div class="cost-box"><div class="label">转化成本</div><div class="value">$${r.transactionCost}</div><div class="sub">/笔订单或线索</div></div>
         </div>
         <div class="advice-box"><strong>🎯 投放建议</strong><br>${r.advice}</div>
       </div>
