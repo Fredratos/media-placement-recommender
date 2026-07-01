@@ -700,11 +700,14 @@ function doGenerate(){
         // Still include but as secondary option
       }
       const rcpi=region.cpi||{low:0.2,high:1.0};
-      const cpc=(rcpi.low+rcpi.high)/2;
+      // 🔑 厂商CPI直接转CPL：CPI=安装成本 → CPL = CPI / 安装→线索CR
+      // 厂商预装用户意图更强，安装→线索CR比社交点击→线索CR高1.5倍
+      const cpiAvg=(rcpi.low+rcpi.high)/2;
+      const cr_install=(CONV_RATES[biz]||0.05)*1.5; // 安装→线索CR ≈ 12%
+      const lead=cplTarget||(cpiAvg/cr_install);
+      const cpc=cpiAvg/16; // 仅用于展示参考CPC
       const uv=cpc*1.3;
-      const cr=CONV_RATES[biz]||0.05;
-      const lead=cplTarget||(cpc/cr);
-      const txn=cpc*(TXN_MULT[biz]||1);
+      const txn=cpiAvg*(TXN_MULT[biz]||1);
       const isBizPreferred=region.bizFocus&&region.bizFocus[biz]===key;
       let pList=placements.slice(0,isBizPreferred?4:3);
       if(placements.length===0)pList=[]; // no placements
@@ -730,21 +733,23 @@ function doGenerate(){
       const placements=PLACEMENTS[key]||[];
       const cpcArr=ADNET_CPC[key]?.[selectedRegion]||[0.20,0.80];
       if(cpcArr[0]===-1)return; // banned
-      const cpc=(cpcArr[0]+cpcArr[1])/2;
-      const uv=cpc*1.15;
-      const cr=CONV_RATES[biz]||0.05;
-      const lead=cplTarget||(cpc/cr);
-      const txn=cpc*(TXN_MULT[biz]||1);
-      let pList=placements.slice(0,3);
+      // 🔑 网盟CPI直接转CPL：CPI / 安装→线索CR（质量打折）
+      const cpiAvg=(cpcArr[0]+cpcArr[1])/2;
+      const cr_install=(CONV_RATES[biz]||0.05)*0.4; // 网盟安装→线索CR仅社交点击CR的40%
+      const lead=cplTarget||(cpiAvg/cr_install);
+      const cpc=cpiAvg/16; // 仅用于展示参考CPC
+      const uv=cpc*1.05;
+      const txn=cpiAvg*(TXN_MULT[biz]||1)*0.7;
+      let pList=placements.slice(0, 3);
       let advice='';
       switch(key){
-        case'mintegral':advice='Mintegral联盟流量，游戏/社交用户为主，CPI计价。拉美CPC$0.3-0.7，中东$0.5-1.0。';break;
-        case'bigo':advice='BIGO联盟(imo+likee)，中东拉美安卓为主。中东CPC$0.3-0.8，拉美$0.2-0.5。';break;
-        case'pangle':advice='Pangle(TikTok联盟)，部分国家不支持，如美国。非游戏产品量有限。';break;
-        case'applovin':advice='AppLovin机器学习驱动，非游戏有门槛需量级。全球覆盖但游戏为主。';break;
-        case'unity':advice='Unity Ads游戏流量为主，短剧小说等非游产品也有量。拉美$0.4-0.8CPI。';break;
-        case'liftoff':advice='Liftoff(Vungle)游戏社交，拉美CPI~$2，中东$3-5。非游戏需测试。';break;
-        case'moloco':advice='Moloco DSP程序化投放，中东CPI$1-1.2，拉美$0.4-0.8。RTA竞价。';break;
+        case'mintegral':advice='Mintegral联盟流量，游戏/社交用户为主，CPI计价。拉美CPC$0.3-0.7，网盟转化率偏低。';break;
+        case'bigo':advice='BIGO联盟(imo+likee)，中东拉美安卓为主。流量质量参差，CPL需溢价预估。';break;
+        case'pangle':advice='Pangle(TikTok联盟)，部分国家不支持。非游戏产品量有限，转化率波动大。';break;
+        case'applovin':advice='AppLovin机器学习驱动，非游戏有门槛需量级。网盟转化率约社交渠道40%。';break;
+        case'unity':advice='Unity Ads游戏流量为主，短剧小说等非游产品也有量。网盟CR约为社交1/3。';break;
+        case'liftoff':advice='Liftoff(Vungle)游戏社交，拉美CPI~$2。非游戏转化需实测，预估溢价。';break;
+        case'moloco':advice='Moloco DSP程序化投放，RTA竞价。网盟流量质量需实测校准CPL。';break;
       }
       allRecs.push({key,brand,info:{share:'-',rank:'网盟',match:'medium',desc:'联盟流量',match:'medium'},placements:pList,cpcRange:'$'+cpcArr[0].toFixed(2)+'-'+cpcArr[1].toFixed(2),avgCpc:cpc,uvCost:uv,leadCost:lead,transactionCost:txn,allocatedBudget:0,monthlyClicks:0,dailyUV:0,monthlyLeads:0,advice,channelType:'adnet',cplSatisfies:cplTarget?lead<=cplTarget:null,score:0,matchRank:2});
     });
