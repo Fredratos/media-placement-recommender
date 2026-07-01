@@ -178,7 +178,7 @@ body,html { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetic
   <!-- ===== AI对比模块（生成后显示） ===== -->
   <div id="aiCompareBlock" style="display:none;">
     <div class="card">
-      <div class="card-title">📊 AI 多目标方案对比 <span class="ai-badge">AI</span></div>
+      <div class="card-title">📊 多目标方案对比</div>
       <div class="ai-compare-row" id="aiCompareContent"></div>
     </div>
   </div>
@@ -679,11 +679,13 @@ function _fastOptimizeAll(channels, totalBudget) {
   }))};
 }
 
+let _compareData = null;
+
 function _renderAIOptimization(aiResult, comparisons, reasoning) {
-  // 对比区块
+  _compareData = { comparisons, baseReasoning: reasoning };
   const compDiv = document.getElementById('aiCompareContent');
   compDiv.innerHTML = comparisons.map(c => `
-    <div class="ai-compare-box ${c.goal==='roi'?'active':''}">
+    <div class="ai-compare-box ${c.goal==='roi'?'active':''}" data-goal="${c.goal}" onclick="_switchGoal('${c.goal}')">
       <div class="lbl">${c.label}</div>
       <div class="num">${c.result.overallRoi || '-'}</div>
       <div style="font-size:10px;color:#aaa;">预估ROI</div>
@@ -693,28 +695,38 @@ function _renderAIOptimization(aiResult, comparisons, reasoning) {
     </div>
   `).join('');
   document.getElementById('aiCompareBlock').style.display = 'block';
+  _renderGoalDetail('roi');
+}
 
-  // AI推荐理由
+function _switchGoal(goal) {
+  if (!_compareData) return;
+  document.querySelectorAll('.ai-compare-box').forEach(box => {
+    box.classList.toggle('active', box.dataset.goal === goal);
+  });
+  _renderGoalDetail(goal);
+}
+
+function _renderGoalDetail(goal) {
+  if (!_compareData) return;
+  const cmp = _compareData.comparisons.find(c => c.goal === goal);
+  if (!cmp) return;
+  const result = cmp.result;
+  const reasoning = _fallbackAIReasoning(result, goal);
   let panel = document.getElementById('aiReasoningPanel');
   if (!panel) {
-    // 如果面板不存在，创建
     const section = document.getElementById('resultSection');
     panel = document.createElement('div');
     panel.id = 'aiReasoningPanel';
     panel.className = 'ai-reasoning-panel';
     section.insertBefore(panel, section.lastElementChild);
   }
-
   panel.innerHTML = `
-    <div class="title">🤖 AI 优化方案与推荐理由 <span class="ai-badge">AI</span></div>
-
+    <div class="title">📌 优化方案详情 — ${cmp.label}</div>
     <div style="font-size:13px;color:#555;margin-bottom:8px;">
-      AI优化后预估整体ROI: <strong style="color:#8e44ad;font-size:18px;">${aiResult.overallRoi}</strong>
+      预估整体ROI: <strong style="color:#8e44ad;font-size:18px;">${result.overallRoi}</strong>
     </div>
-
     <div style="margin-bottom:10px;">
-      ${aiResult.allocations.map(a => {
-        const bw = Math.max(8, a.budgetPct * 1.5);
+      ${result.allocations.map(a => {
         return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
           <span style="font-size:12px;width:80px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name.split(/\s+/)[0]}</span>
           <div style="flex:1;height:16px;background:#e8dff5;border-radius:8px;overflow:hidden;">
@@ -725,17 +737,13 @@ function _renderAIOptimization(aiResult, comparisons, reasoning) {
         </div>`;
       }).join('')}
     </div>
-
     <div class="reason-block">
       <div class="label">📌 渠道分配理由</div>
       <div class="text">${reasoning.reasoning}</div>
     </div>
-
     ${reasoning.risk ? `<div class="split"></div><div class="reason-block"><div class="label">⚠️ 风险提示</div><div class="text">${reasoning.risk}</div></div>` : ''}
-
     ${reasoning.summary ? `<div class="split"></div><div class="reason-block"><div class="label">🎯 策略总结</div><div class="text">${reasoning.summary}</div></div>` : ''}
   `;
-
   panel.style.display = 'block';
 }
 
@@ -1080,7 +1088,7 @@ function _buildAIChannels(allRecs) {
 // ---- 调用 DeepSeek API 生成推荐理由 ----
 // ---- 生成推荐理由（内置模板引擎，无需外部 API） ----
 function _callAIReasoning(result, budget, bizName, regionName) {
-  return _fallbackAIReasoning(result);
+  return _fallbackAIReasoning(result, 'roi');
 }
 
 function _parseAIOutput(content) {
@@ -1102,9 +1110,10 @@ function _extractSummary(text) {
   return text.substring(text.length - 200);
 }
 
-function _fallbackAIReasoning(result) {
+function _fallbackAIReasoning(result, goal) {
+  const label = {roi:'ROI优先',cvr:'转化优先',brand:'曝光优先'}[goal||'roi'] || '';
   const reasons = result.allocations.map(a => {
-    if (a.budgetPct > 30) return `**${a.name}**（${a.budgetPct}%）— 核心渠道，历史ROI表现优异，优先分配预算。`;
+    if (a.budgetPct > 30) return `**${a.name}**（${a.budgetPct}%）— 核心渠道，历史表现优异，${label}策略下优先分配预算。`;
     if (a.budgetPct > 10) return `**${a.name}**（${a.budgetPct}%）— 重要补充渠道，兼顾多元化与效率。`;
     if (a.budgetPct > 3) return `**${a.name}**（${a.budgetPct}%）— 测试性投入，验证渠道效果后再决定是否加量。`;
     return `**${a.name}**（${a.budgetPct}%）— 小额保底，保持渠道覆盖。`;
@@ -1113,10 +1122,10 @@ function _fallbackAIReasoning(result) {
     reasoning: reasons,
     risk: result.allocations.filter(a => a.estimatedRoi < 1.5).length > 2
       ? '⚠️ 多个渠道预估ROI偏低，建议关注成本控制和投放优化。'
-      : '✅ 整体方案较为均衡，主要风险在于渠道实际表现与预估可能偏差。',
-    summary: result.allocations.length > 3
-      ? '核心策略：以高ROI渠道为主力（' + result.allocations[0].name + '），低竞争蓝海渠道为增长点，辅以测试性渠道布局。'
-      : '聚焦' + result.allocations.map(a => a.name).join('、') + '投放，控制预算分散风险。',
+      : '',
+    summary: result.allocations.sort((a,b) => b.budgetPct - a.budgetPct).slice(0,3).map((a,i) =>
+      ['【首选】','【补充】','【测试】'][i] + ' ' + a.name.split(/\s+/)[0] + '(' + a.budgetPct + '%)'
+    ).join(' → '),
   };
 }
 
