@@ -802,6 +802,17 @@ function doGenerate(){
   const mfgB=allRecs.filter(r=>r.channelType==='mfg').reduce((s,r)=>s+r.allocatedBudget,0);
   const adnetB=allRecs.filter(r=>r.channelType==='adnet').reduce((s,r)=>s+r.allocatedBudget,0);
 
+  // 按CPL效率排序 + 预算自适应裁剪 Top-N 渠道（避免小预算推太多渠道）
+  allRecs.sort(function(a, b) {
+    var cplA = a.leadCost || 999;
+    var cplB = b.leadCost || 999;
+    var effA = (a.score || 100) / cplA;
+    var effB = (b.score || 100) / cplB;
+    return effB - effA;
+  });
+  var maxChannels = (typeof _getTopN === 'function') ? _getTopN(budget || 0) : 4;
+  allRecs = allRecs.slice(0, Math.min(maxChannels, allRecs.length));
+
   return {
     region:region.name,country:selectedCountry||region.countries[0],
     biz:BIZ_NAMES[biz],bizIcon:BIZ_ICONS[biz],
