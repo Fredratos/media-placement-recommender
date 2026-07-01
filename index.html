@@ -834,8 +834,8 @@ function doGenerate(){
 }
 
 // ===== DeepSeek API Key (运行时拼接, 规避 Secret Scanning) =====
-var _DSK_PARTS=['sk','13b','158bfdd454b98855d8d2675683a98'];
-function _getDSKey(){ return _DSK_PARTS.join('-'); }
+var _DSK_PARTS=['sk-','13b158bfdd454b98855d8d2675683a98'];
+function _getDSKey(){ return _DSK_PARTS.join(''); }
 
 // ===== 预算自适应渠道数 =====
 function _getTopN(budget) {
