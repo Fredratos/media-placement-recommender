@@ -1014,35 +1014,76 @@ function _aiOptimize(channels, totalBudget, goalKPI) {
     };
   });
 
-  // ====== 策略1: ROI优先 ======
-  // 分配逻辑: score高 + 低CPC + 搜索/社交渠道优先
+  // ====== Top-N 集中分配策略（三个目标各自不同渠道权重） ======
+  
+  // 策略1: ROI优先 → Top-5: 高评分 + 低CPC + 搜索/社交渠道
   if (goalKPI === 'roi') {
-    var weights = scores.map(function(s) {
-      var w = s.scoreNorm * 0.45 + s.costEff * 0.35 + s.typeScore * 0.20; return Math.max(0.5, w * 100);
+    var weighted = scores.map(function(s, i) {
+      var scorePow = Math.pow(s.scoreNorm, 3);      // 评分³放大
+      var costEff = Math.pow(Math.min(3, 1.5 / Math.max(s.cpc, 0.1)), 2.5);  // 低CPC²·⁵
+      var typeW = {search:6, koc:5, social:3, video:2, pr:1}[s.cat] || 1.5;
+      var w = scorePow * costEff * typeW;
+      return { idx: i, w: w };
     });
+    weighted.sort(function(a, b) { return b.w - a.w; });
+    var topN = Math.min(4, weighted.length);
+    var weights = new Array(scores.length).fill(0.3);
+    var topWeightSum = 0;
+    for (var jj = 0; jj < topN; jj++) topWeightSum += weighted[jj].w;
+    for (var j1 = 0; j1 < weighted.length; j1++) {
+      if (j1 < topN) {
+        weights[weighted[j1].idx] = (65 / topN) * (weighted[j1].w / topWeightSum) * topN;
+      } else {
+        weights[weighted[j1].idx] = 35 / (weighted.length - topN);
+      }
+    }
     return _buildAllocFromWeights(channels, scores, weights, totalBudget);
   }
 
-  // ====== 策略2: 转化优先（CVR） ======
-  // 分配逻辑: 高CVR + KOC/搜索渠道 + 低CPL
+  // 策略2: 转化优先（CVR）→ Top-4: 高CVR + KOC/Search渠道
   if (goalKPI === 'cvr') {
-    var weights = scores.map(function(s) {
-      var cvrScore = Math.min(3, s.cvr * 50);  // cvr 0.08 → 4.0
-      var kocBoost = s.cat === 'koc' ? 3.0 : (s.cat === 'search' ? 2.0 : 1.0);
-      var w = s.scoreNorm * 0.25 + cvrScore * 0.45 + kocBoost * 0.30;
-      return Math.max(0.3, w * 100);
+    var weighted = scores.map(function(s, i) {
+      var cvrPow = Math.pow(Math.min(s.cvr * 100, 20), 3);  // CVR³放大
+      var typeW = {koc:8, search:5, social:2, video:1.5, pr:0.8}[s.cat] || 1;
+      var scoreNorm = Math.pow(s.scoreNorm, 2);
+      var w = cvrPow * typeW * scoreNorm;
+      return { idx: i, w: w };
     });
+    weighted.sort(function(a, b) { return b.w - a.w; });
+    var topN = Math.min(4, weighted.length);
+    var weights = new Array(scores.length).fill(0.3);
+    var topWeightSum = 0;
+    for (var jj = 0; jj < topN; jj++) topWeightSum += weighted[jj].w;
+    for (var j1 = 0; j1 < weighted.length; j1++) {
+      if (j1 < topN) {
+        weights[weighted[j1].idx] = (65 / topN) * (weighted[j1].w / topWeightSum) * topN;
+      } else {
+        weights[weighted[j1].idx] = 35 / (weighted.length - topN);
+      }
+    }
     return _buildAllocFromWeights(channels, scores, weights, totalBudget);
   }
 
-  // ====== 策略3: 曝光优先（Brand） ======
-  // 分配逻辑: 低CPM + 视频/社交 + 高覆盖
-  var weights = scores.map(function(s) {
-    var cpmEff = Math.min(3, 15 / Math.max(s.cpm, 1));
-    var reachBoost = {social:2, video:2.5, search:1.5, koc:1.0, pr:1.2}[s.cat] || 1.0;
-    var w = s.scoreNorm * 0.20 + cpmEff * 0.50 + reachBoost * 0.30;
-    return Math.max(0.3, w * 100);
+  // 策略3: 曝光优先（Brand）→ Top-4: 低CPM + 视频/社交渠道
+  var weighted = scores.map(function(s, i) {
+    var cpmInv = Math.pow(20 / Math.max(s.cpm, 1), 2.5);  // CPM倒数²·⁵
+    var typeW = {video:8, social:5, pr:3, search:2, koc:1.5}[s.cat] || 1;
+    var scoreNorm = Math.pow(s.scoreNorm, 1.5);
+    var w = cpmInv * typeW * scoreNorm;
+    return { idx: i, w: w };
   });
+  weighted.sort(function(a, b) { return b.w - a.w; });
+  var topN = Math.min(4, weighted.length);
+  var weights = new Array(scores.length).fill(0.3);
+  var topWeightSum = 0;
+  for (var jj = 0; jj < topN; jj++) topWeightSum += weighted[jj].w;
+  for (var j1 = 0; j1 < weighted.length; j1++) {
+    if (j1 < topN) {
+      weights[weighted[j1].idx] = (65 / topN) * (weighted[j1].w / topWeightSum) * topN;
+    } else {
+      weights[weighted[j1].idx] = 35 / (weighted.length - topN);
+    }
+  }
   return _buildAllocFromWeights(channels, scores, weights, totalBudget);
 }
 
