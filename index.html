@@ -912,10 +912,13 @@ async function _runTop4Optimization(result) {
     var aiResult = await _callDeepSeekForAlloc(allocs, budget, result.biz || selectedBiz, result.country || selectedRegion, channelFilter, channelSummary);
     if (aiResult) {
       _renderOptimizationPanel(allocs, topN, budget, result.biz || selectedBiz, result.country || selectedRegion, channelFilter, aiResult.roiEstimates, aiResult.reasoning);
+      return;
     }
   } catch(e) {
-    console.log('DeepSeek AI enhancement failed (using template):', e.message);
+    console.log('DeepSeek AI enhancement failed:', e.message);
   }
+  // 失败或无结果时，用模板总结替换"加载中"
+  _renderOptimizationPanel(allocs, topN, budget, result.biz || selectedBiz, result.country || selectedRegion, channelFilter, null, null);
 }
 
 function _renderOptimizationPanel(allocs, topN, budget, bizName, regionName, channelFilter, aiRoiEstimates, aiReasoning) {
@@ -964,10 +967,11 @@ function _renderOptimizationPanel(allocs, topN, budget, bizName, regionName, cha
     html += '<div style="font-size:13px;color:#333;line-height:1.6;">' + aiReasoning + '</div>';
     html += '</div>';
   } else {
-    // 无 AI 结果时显示简单的效率总结
+    // 无 AI 结果时显示模板效率总结
+    var avgCpl = totalLeads > 0 ? Math.round(budget / totalLeads) : 0;
     html += '<div style="background:#f0fdf4;padding:10px;border-radius:8px;margin-top:8px;">';
     html += '<span style="font-size:13px;color:#27ae60;">🎯 预估总线索数: <strong>' + totalLeads.toLocaleString() + ' 条/月</strong></span>';
-    html += '<span style="font-size:11px;color:#888;margin-left:12px;">AI增强分析加载中...</span>';
+    html += '<span style="font-size:11px;color:#666;margin-left:12px;">均CPL ≈ $' + avgCpl + ' | 基于CPL效率的Top-' + allocs.length + '渠道集中分配</span>';
     html += '</div>';
   }
 
