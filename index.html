@@ -980,7 +980,10 @@ function _aiOptimize(channels, totalBudget, goalKPI) {
     }], overallRoi:0};
   }
 
-  let x = new Array(n).fill(1/n);
+  const totalScore = channels.reduce((s, ch) => s + (ch.score || 100), 0);
+  let x = channels.map(ch => Math.max(0.01, (ch.score || 100) / totalScore));
+  const xSum = x.reduce((s, v) => s + v, 0);
+  for (let i = 0; i < n; i++) x[i] /= xSum;
   const budget = totalBudget;
   const lr = 0.12;
   const maxIter = 30;   // 从200→30，大幅减少循环
@@ -1000,21 +1003,30 @@ function _aiOptimize(channels, totalBudget, goalKPI) {
       const cat = CHANNEL_CATS[ch.key] || 'social';
 
       if (goalKPI === 'roi') {
-        const roi = (ch.avgRoi != null) ? ch.avgRoi : _aiDefault(ch.key, 'roi', cat);
+        // ROI目标：用算法评分+渠道特征综合评分
+        const scoreBase = (ch.score || 100) / 100;
+        const roi = (ch.avgRoi != null) ? ch.avgRoi * 5 : _aiDefault(ch.key, 'roi', cat);
         const b = x[i] * budget;
         const decay = Math.max(0, (b - 1000) / (b + 3000)) * 0.25;
-        const compDisc = {high:0.80, medium:0.93, low:1.0}[ch.competition] || 0.9;
-        const trendM = {up:1.05, stable:1.0, down:0.90}[ch.trend] || 1.0;
-        const effective = roi * (1 - decay) * compDisc * trendM + entropyBonus;
+        const compDisc = {high:0.70, medium:0.88, low:1.0}[ch.competition] || 0.88;
+        const trendM = {up:1.10, stable:1.0, down:0.85}[ch.trend] || 1.0;
+        const cpcDisc = Math.min(2.0, Math.max(0.5, 1.5 / (ch.avgCpc || 1)));
+        const effective = scoreBase * 0.6 + roi * 0.3 * (1 - decay) * compDisc * trendM + cpcDisc * 0.1 + entropyBonus;
         grads.push(effective);
         curScore += effective * x[i];
       } else if (goalKPI === 'cvr') {
+        const scoreBase = (ch.score || 100) / 100;
         const cvr = (ch.avgCvr != null) ? ch.avgCvr : _aiDefault(ch.key, 'cvr', cat);
-        grads.push(cvr * 100);
-        curScore += cvr * x[i];
+        const cpcDisc = Math.min(1.5, Math.max(0.5, 1.0 / (ch.avgCpc || 1)));
+        const effective = scoreBase * 0.5 + cvr * 50 * 0.4 + cpcDisc * 0.1 + entropyBonus;
+        grads.push(effective);
+        curScore += effective * x[i];
       } else {
+        const scoreBase = (ch.score || 100) / 100;
         const cpm = (ch.avgCpm != null) ? ch.avgCpm : _aiDefault(ch.key, 'cpm', cat);
-        grads.push(100 / Math.max(cpm / 1000, 1));
+        const impressions = 100 / Math.max(cpm / 1000, 1);
+        const effective = scoreBase * 0.4 + impressions * 0.6 + entropyBonus;
+        grads.push(effective);
         const imps = (budget * 100 * x[i]) / Math.max(cpm / 1000, 1);
         curScore += imps;
       }
@@ -1082,6 +1094,7 @@ function _buildAIChannels(allRecs) {
     avgRoi: r.transactionCost > 0 && r.leadCost > 0 ? (r.transactionCost / r.leadCost) : null,
     competition: r.channelType==='social' ? (r.info?.match==='top' ? 'high' : 'medium') : 'medium',
     trend: r.channelType==='social' ? 'stable' : 'stable',
+    score: r.score || 100,
   }));
 }
 
