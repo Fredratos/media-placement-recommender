@@ -980,11 +980,10 @@ function _aiEstimateChannel(ch, budget) {
   return { impressions, clicks, conversions, roi: adjustedRoi };
 }
 
-// ---- SLSQP 预算分配优化（JS实现，等比例迭代逼近） ----
-function _aiOptimize(channels, totalBudget, goalKPI) { 
+// ---- 直接策略分配引擎（替代迭代梯度优化，三个目标策略完全不同）----
+function _aiOptimize(channels, totalBudget, goalKPI) {
   if (!channels.length) { return {allocations:[], overallRoi:null}; }
-  const n = channels.length;
-  if (n === 1) {
+  if (channels.length === 1) {
     return {allocations:[{
       key:channels[0].key, name:channels[0].name,
       budget:totalBudget, budgetPct:100,
@@ -992,84 +991,72 @@ function _aiOptimize(channels, totalBudget, goalKPI) {
     }], overallRoi:0};
   }
 
-  const totalScore = channels.reduce((s, ch) => s + (ch.score || 100), 0);
-  let x = channels.map(ch => Math.max(0.01, (ch.score || 100) / totalScore));
-  const xSum = x.reduce((s, v) => s + v, 0);
-  for (let i = 0; i < n; i++) x[i] /= xSum;
-  const budget = totalBudget;
-  const lr = 0.12;
-  const maxIter = 30;   // 从200→30，大幅减少循环
-  const minPct = 0.01;
-  let prevScore = -1e9;
+  // 对每个渠道计算三个维度的得分：算法评分(score)、成本效率(costEff)、渠道类型(typeScore)
+  var scores = channels.map(function(ch) {
+    var cat = CHANNEL_CATS[ch.key] || 'social';
+    var score = ch.score || 100;
+    var cpc = ch.avgCpc || 1;
+    var cpm = ch.avgCpm || cpc * h10;
+    var cvr = ch.avgCvr || 0.05;
+    var roi = (ch.avgRoi != null) ? ch.avgRoi : _aiDefault(ch.key, 'roi', cat);
+    
+    // 成本效率分（CPC低=效率高）
+    var costEff = Math.min(3, 1.5 / Math.max(cpc, 0.1));
+    // 算法评分归一化
+    var scoreNorm = Math.min(score / 1350, 2);  // 以Meta最高分1350为基准
+    // 渠道类型加权
+    var typeScore = {search:1.5, social:1.2, koc:2.0, pr:0.8, video:1.0}[cat] || 1.0;
+    
+    return {
+      key: ch.key, name: ch.name, cat: cat,
+      score: score, cpc: cpc, cpm: cpm, cvr: cvr, roi: roi,
+      costEff: costEff, scoreNorm: scoreNorm, typeScore: typeScore
+    };
+  });
 
-  for (let iter = 0; iter < maxIter; iter++) {
-    const grads = [];
-    const entropy = x.reduce((s, xi) => xi > 0.01 ? s - xi * Math.log(xi + 1e-10) : s, 0);
-    const maxEntropy = Math.log(n);
-    const entropyBonus = (entropy / maxEntropy) * 0.08;
-    let curScore = 0;
-
-    for (let i = 0; i < n; i++) {
-      if (x[i] < 0.005) { grads.push(0); continue; }
-      const ch = channels[i];
-      const cat = CHANNEL_CATS[ch.key] || 'social';
-
-      if (goalKPI === 'roi') {
-        // ROI目标：用算法评分+渠道特征综合评分
-        const scoreBase = (ch.score || 100) / 100;
-        const roi = (ch.avgRoi != null) ? ch.avgRoi * 5 : _aiDefault(ch.key, 'roi', cat);
-        const b = x[i] * budget;
-        const decay = Math.max(0, (b - 1000) / (b + 3000)) * 0.25;
-        const compDisc = {high:0.70, medium:0.88, low:1.0}[ch.competition] || 0.88;
-        const trendM = {up:1.10, stable:1.0, down:0.85}[ch.trend] || 1.0;
-        const cpcDisc = Math.min(2.0, Math.max(0.5, 1.5 / (ch.avgCpc || 1)));
-        const effective = scoreBase * 0.6 + roi * 0.3 * (1 - decay) * compDisc * trendM + cpcDisc * 0.1 + entropyBonus;
-        grads.push(effective);
-        curScore += effective * x[i];
-      } else if (goalKPI === 'cvr') {
-        const scoreBase = (ch.score || 100) / 100;
-        const cvr = (ch.avgCvr != null) ? ch.avgCvr : _aiDefault(ch.key, 'cvr', cat);
-        const cpcDisc = Math.min(1.5, Math.max(0.5, 1.0 / (ch.avgCpc || 1)));
-        const effective = scoreBase * 0.5 + cvr * 50 * 0.4 + cpcDisc * 0.1 + entropyBonus;
-        grads.push(effective);
-        curScore += effective * x[i];
-      } else {
-        const scoreBase = (ch.score || 100) / 100;
-        const cpm = (ch.avgCpm != null) ? ch.avgCpm : _aiDefault(ch.key, 'cpm', cat);
-        const impressions = 100 / Math.max(cpm / 1000, 1);
-        const effective = scoreBase * 0.4 + impressions * 0.6 + entropyBonus;
-        grads.push(effective);
-        const imps = (budget * 100 * x[i]) / Math.max(cpm / 1000, 1);
-        curScore += imps;
-      }
-    }
-
-    // 早停: 目标值不再提升
-    if (Math.abs(curScore - prevScore) < 0.001 && iter > 5) break;
-    prevScore = curScore;
-
-    const sumGrad = grads.reduce((s, g) => s + g, 0);
-    if (sumGrad > 0) {
-      for (let i = 0; i < n; i++) {
-        x[i] += lr * (grads[i] / sumGrad - x[i]);
-      }
-    }
-
-    for (let i = 0; i < n; i++) {
-      x[i] = Math.max(minPct, Math.min(1, x[i]));
-    }
-
-    const total = x.reduce((s, v) => s + v, 0);
-    for (let i = 0; i < n; i++) x[i] /= total;
+  // ====== 策略1: ROI优先 ======
+  // 分配逻辑: score高 + 低CPC + 搜索/社交渠道优先
+  if (goalKPI === 'roi') {
+    var weights = scores.map(function(s) {
+      var w = s.scoreNorm * 0.45 + s.costEff * 0.35 + s.typeScore * 0.20; return Math.max(0.5, w * 100);
+    });
+    return _buildAllocFromWeights(channels, scores, weights, totalBudget);
   }
 
-  // 构建结果
-  let weightedRoiSum = 0;
-  const allocs = [];
-  for (let i = 0; i < n; i++) {
-    const b = roundTo(x[i] * budget, 2);
-    const pct = roundTo(x[i] * 100, 1);
-    const est = _aiEstimateChannel(channels[i], b);
+  // ====== 策略2: 转化优先（CVR） ======
+  // 分配逻辑: 高CVR + KOC/搜索渠道 + 低CPL
+  if (goalKPI === 'cvr') {
+    var weights = scores.map(function(s) {
+      var cvrScore = Math.min(3, s.cvr * 50);  // cvr 0.08 → 4.0
+      var kocBoost = s.cat === 'koc' ? 3.0 : (s.cat === 'search' ? 2.0 : 1.0);
+      var w = s.scoreNorm * 0.25 + cvrScore * 0.45 + kocBoost * 0.30;
+      return Math.max(0.3, w * 100);
+    });
+    return _buildAllocFromWeights(channels, scores, weights, totalBudget);
+  }
+
+  // ====== 策略3: 曝光优先（Brand） ======
+  // 分配逻辑: 低CPM + 视频/社交 + 高覆盖
+  var weights = scores.map(function(s) {
+    var cpmEff = Math.min(3, 15 / Math.max(s.cpm, 1));
+    var reachBoost = {social:2, video:2.5, search:1.5, koc:1.0, pr:1.2}[s.cat] || 1.0;
+    var w = s.scoreNorm * 0.20 + cpmEff * 0.50 + reachBoost * 0.30;
+    return Math.max(0.3, w * 100);
+  });
+  return _buildAllocFromWeights(channels, scores, weights, totalBudget);
+}
+
+// ---- 从权重向量构建分配结果 ----
+function _buildAllocFromWeights(channels, scores, weights, totalBudget) {
+  var sumW = weights.reduce(function(s, w) { return s + w; }, 0);
+  var allocs = [];
+  var weightedRoiSum = 0;
+  
+  for (var i = 0; i < channels.length; i++) {
+    var pct = roundTo(weights[i] / sumW * 100, 1);
+    if (pct < 0.5) continue;  // 低于0.5%的渠道忽略
+    var b = roundTo(weights[i] / sumW * totalBudget, 0);
+    var est = _aiEstimateChannel(channels[i], b);
     allocs.push({
       key: channels[i].key,
       name: channels[i].name,
@@ -1083,11 +1070,16 @@ function _aiOptimize(channels, totalBudget, goalKPI) {
     weightedRoiSum += est.roi * b;
   }
 
-  const overallRoi = budget > 0 ? roundTo(weightedRoiSum / budget, 2) : null;
+  // 补齐pct到100%
+  var totalPct = allocs.reduce(function(s, a) { return s + a.budgetPct; }, 0);
+  if (allocs.length > 0 && Math.abs(totalPct - 100) > 0.5) {
+    var diff = 100 - totalPct;
+    allocs[0].budgetPct = roundTo(allocs[0].budgetPct + diff, 1);
+  }
 
-  allocs.sort((a, b) => b.budgetPct - a.budgetPct);
-  
-  return { allocations: allocs, overallRoi };
+  allocs.sort(function(a, b) { return b.budgetPct - a.budgetPct; });
+  var overallRoi = totalBudget > 0 ? roundTo(weightedRoiSum / totalBudget, 2) : null;
+  return { allocations: allocs, overallRoi: overallRoi };
 }
 
 function roundTo(v, d) {
