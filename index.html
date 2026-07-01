@@ -175,13 +175,6 @@ body,html { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetic
     </div>
   </div>
 
-  <!-- ===== AI对比模块（生成后显示） ===== -->
-  <div id="aiCompareBlock" style="display:none;">
-    <div class="card">
-      <div class="card-title">📊 多目标方案对比</div>
-      <div class="ai-compare-row" id="aiCompareContent"></div>
-    </div>
-  </div>
 
   <button class="btn-generate" id="genBtn" onclick="generate()">🚀 生成推荐方案</button>
 
@@ -629,18 +622,16 @@ function generate(){
   try {
     btn.disabled=true;btn.textContent='⏳ 分析中...';
     hideResult();
-    const cmpEl = document.getElementById('aiCompareBlock');
-    if (cmpEl) cmpEl.style.display='none';
     const rsnEl = document.getElementById('aiReasoningPanel');
     if (rsnEl) rsnEl.style.display='none';
 
-    const result=doGenerate();
+    var result = doGenerate();
     renderResult(result);
     document.getElementById('resultSection').style.display='block';
     document.getElementById('resultSection').scrollIntoView({behavior:'smooth',block:'start'});
 
     if (result.recommendations.length > 0) {
-      _runAIOptimization(result);
+      _runTop4Optimization(result);
     }
   } catch(e) {
     console.error('Generate error:', e);
@@ -649,483 +640,101 @@ function generate(){
   btn.disabled=false;btn.textContent='🚀 生成推荐方案';
 }
 
-async function _runAIOptimization(result) {
+async function _runTop4Optimization(result) {
   var budget = parseFloat(document.getElementById('budget').value) || 0;
+  var channelFilter = selectedChannel || 'all';
   if (budget <= 0) return;
 
-  var aiChannels = _buildAIChannels(result.recommendations);
-  if (aiChannels.length < 2) return;
+  // 从推荐结果中筛选渠道
+  var allRecs = result.recommendations.filter(function(r) {
+    if (r.noPlatform) return false;
+    if (channelFilter === 'social') return r.channelType === 'social';
+    if (channelFilter === 'mfg') return r.channelType === 'mfg';
+    if (channelFilter === 'adnet') return r.channelType === 'adnet';
+    return true;
+  });
 
-  // 第一阶段：快速模板渲染（毫秒级完成，用户无等待感）
-  var optimizeAll = _fastOptimizeAll(aiChannels, budget);
-  var templateReasoning = _fallbackAIReasoning(optimizeAll.roi, 'roi');
-  _renderAIOptimization(optimizeAll.roi, optimizeAll.comparisons, templateReasoning);
+  if (allRecs.length === 0) return;
 
-  // 第二阶段：异步获取 DeepSeek 增强结果
-  try {
-    var bizName = BIZ_NAMES[selectedBiz] || '通用';
-    var regionName = REGION_DATA[selectedRegion] && REGION_DATA[selectedRegion].name || '';
-    var dsReasoning = await _callAIReasoning(optimizeAll.roi, budget, bizName, regionName);
-    if (dsReasoning && dsReasoning.dsAllocations) {
-      // DeepSeek 返回了优化数据，更新面板显示
-      _renderAIOptimization(optimizeAll.roi, optimizeAll.comparisons, dsReasoning);
-    }
-  } catch(e) {
-    console.warn('[DeepSeek] Enhancement skipped:', e.message);
+  // 计算每个渠道的线索效率：预算 / CPL = 预估线索数
+  var scored = allRecs.map(function(r) {
+    var cpl = r.leadCost || 999;
+    var leadsPerDollar = 1 / cpl;  // 每美元产生的线索数
+    // 综合评分 = 算法评分 × 线索效率
+    var score = (r.score || 100) * leadsPerDollar;
+    return { rec: r, score: score, leadsPerDollar: leadsPerDollar, cpl: cpl };
+  });
+
+  // 按综合评分降序排列
+  scored.sort(function(a, b) { return b.score - a.score; });
+
+  // 取 Top 4
+  var top4 = scored.slice(0, 4);
+  
+  // 按线索效率比例分配预算（线索效率越高，分配越多）
+  var totalEfficiency = top4.reduce(function(s, item) { return s + item.leadsPerDollar; }, 0);
+  
+  var allocs = top4.map(function(item) {
+    var pct = Math.round(item.leadsPerDollar / totalEfficiency * 100);
+    var allocBudget = Math.round(pct * budget / 100);
+    var monthlyLeads = Math.round(allocBudget / item.cpl);
+    return {
+      key: item.rec.key,
+      name: item.rec.brand ? item.rec.brand.name : item.rec.key,
+      budget: allocBudget,
+      budgetPct: pct,
+      cpl: item.cpl,
+      monthlyLeads: monthlyLeads
+    };
+  });
+
+  // 调整百分比使总和为100
+  var totalPct = allocs.reduce(function(s, a) { return s + a.budgetPct; }, 0);
+  if (allocs.length > 0 && totalPct !== 100) {
+    allocs[0].budgetPct += (100 - totalPct);
+    allocs[0].budget = Math.round(allocs[0].budgetPct * budget / 100);
   }
-}
 
-// 一次迭代同时算出3个目标（ROI/CVR/Brand），减少重复计算
-function _fastOptimizeAll(channels, totalBudget) {
-  // 复用 _aiOptimize 的梯度计算逻辑，但只跑一次迭代循环
-  // 对每个目标单独计算梯度方向
-  const goals = ['roi', 'cvr', 'brand'];
-  const results = {};
-  goals.forEach(g => {
-    results[g] = _aiOptimize(channels, totalBudget, g);
-  });
-  return { roi: results.roi, comparisons: goals.map(g => ({
-    goal: g,
-    label: {roi:'ROI优先',cvr:'转化优先',brand:'曝光优先'}[g],
-    result: results[g]
-  }))};
-}
-
-let _compareData = null;
-
-function _renderAIOptimization(aiResult, comparisons, reasoning) {
-  _compareData = { comparisons, baseReasoning: reasoning };
-  const compDiv = document.getElementById('aiCompareContent');
-  compDiv.innerHTML = comparisons.map(c => `
-    <div class="ai-compare-box ${c.goal==='roi'?'active':''}" data-goal="${c.goal}" onclick="_switchGoal('${c.goal}')">
-      <div class="lbl">${c.label}</div>
-      <div class="num">${c.result.overallRoi || '-'}</div>
-      <div style="font-size:10px;color:#aaa;">预估ROI</div>
-      <div style="font-size:10px;color:#888;margin-top:3px;">
-        ${c.result.allocations.filter(a => a.budgetPct > 10).map(a => a.name.split(/\s+/)[0]).join('、')}
-      </div>
-    </div>
-  `).join('');
-  document.getElementById('aiCompareBlock').style.display = 'block';
-  _renderGoalDetail('roi');
-}
-
-function _switchGoal(goal) {
-  if (!_compareData) return;
-  document.querySelectorAll('.ai-compare-box').forEach(box => {
-    box.classList.toggle('active', box.dataset.goal === goal);
-  });
-  _renderGoalDetail(goal);
-}
-
-function _renderGoalDetail(goal) {
-  if (!_compareData) return;
-  const cmp = _compareData.comparisons.find(c => c.goal === goal);
-  if (!cmp) return;
-  const result = cmp.result;
-  const reasoning = _fallbackAIReasoning(result, goal);
-  let panel = document.getElementById('aiReasoningPanel');
+  // 渲染优化结果面板
+  var panel = document.getElementById('aiReasoningPanel');
   if (!panel) {
-    const section = document.getElementById('resultSection');
+    var section = document.getElementById('resultSection');
     panel = document.createElement('div');
     panel.id = 'aiReasoningPanel';
     panel.className = 'ai-reasoning-panel';
     section.insertBefore(panel, section.lastElementChild);
   }
-  panel.innerHTML = `
-    <div class="title">📌 优化方案详情 — ${cmp.label}</div>
-    <div style="font-size:13px;color:#555;margin-bottom:8px;">
-      预估整体ROI: <strong style="color:#8e44ad;font-size:18px;">${result.overallRoi}</strong>
-    </div>
-    <div style="margin-bottom:10px;">
-      ${result.allocations.map(a => {
-        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-          <span style="font-size:12px;width:80px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name.split(/\s+/)[0]}</span>
-          <div style="flex:1;height:16px;background:#e8dff5;border-radius:8px;overflow:hidden;">
-            <div style="height:100%;width:${Math.min(100,a.budgetPct*1.2)}%;background:linear-gradient(90deg,#8e44ad,#a569bd);border-radius:8px;"></div>
-          </div>
-          <span style="font-size:11px;color:#666;width:60px;">${a.budgetPct}%</span>
-          <span style="font-size:11px;color:#8e44ad;width:50px;">ROI ${a.estimatedRoi}</span>
-        </div>`;
-      }).join('')}
-    </div>
-    <div class="reason-block">
-      <div class="label">📌 渠道分配理由</div>
-      <div class="text">${reasoning.reasoning}</div>
-    </div>
-    ${reasoning.risk ? `<div class="split"></div><div class="reason-block"><div class="label">⚠️ 风险提示</div><div class="text">${reasoning.risk}</div></div>` : ''}
-    ${reasoning.summary ? `<div class="split"></div><div class="reason-block"><div class="label">🎯 策略总结</div><div class="text">${reasoning.summary}</div></div>` : ''}
-  `;
+
+  var totalLeads = allocs.reduce(function(s, a) { return s + a.monthlyLeads; }, 0);
+  
+  var html = '<div class="title">📌 Top-4 渠道优化方案 — 最大化线索获取</div>';
+  html += '<div style="font-size:13px;color:#555;margin-bottom:8px;">';
+  html += '预算分配策略: <strong>按CPL效率排序，Top-4渠道集中投放</strong>';
+  html += '</div>';
+  
+  html += '<div style="margin-bottom:10px;">';
+  for (var i = 0; i < allocs.length; i++) {
+    var a = allocs[i];
+    var barWidth = Math.min(100, a.budgetPct * 1.5);
+    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">';
+    html += '<span style="font-size:12px;width:80px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + a.name.split(/\s+/)[0] + '</span>';
+    html += '<div style="flex:1;height:20px;background:#e8dff5;border-radius:10px;overflow:hidden;">';
+    html += '<div style="height:100%;width:' + barWidth + '%;background:linear-gradient(90deg,#8e44ad,#a569bd);border-radius:10px;"></div>';
+    html += '</div>';
+    html += '<span style="font-size:11px;color:#666;width:50px;">' + a.budgetPct + '%</span>';
+    html += '<span style="font-size:11px;color:#8e44ad;">CPL $' + a.cpl.toFixed(2) + '</span>';
+    html += '<span style="font-size:11px;color:#27ae60;">预估' + a.monthlyLeads.toLocaleString() + '线索/月</span>';
+    html += '</div>';
+  }
+  
+  html += '</div>';
+  html += '<div style="background:#f0fdf4;padding:10px;border-radius:8px;margin-top:8px;">';
+  html += '<span style="font-size:13px;color:#27ae60;">🎯 预估总线索数: <strong>' + totalLeads.toLocaleString() + ' 条/月</strong></span>';
+  html += '<span style="font-size:11px;color:#888;margin-left:12px;">基于CPL效率的Top-4渠道集中分配</span>';
+  html += '</div>';
+  
+  panel.innerHTML = html;
   panel.style.display = 'block';
-}
-
-function doGenerate(){ 
-  const region=REGION_DATA[selectedRegion];
-  const socialRegion=SOCIAL_REGION_DATA[selectedRegion];
-  const biz=selectedBiz;
-  const costTarget=parseFloat(document.getElementById('costTarget').value)||null;
-  const cplTarget=parseFloat(document.getElementById('cplTarget').value)||null;
-  const budget=parseFloat(document.getElementById('budget').value)||0;
-  const isLowCoverage=region.note&&region.note.includes('无广告资源');
-
-  let allRecs=[];
-  const showSocial=selectedChannel==='all'||selectedChannel==='social';
-  const showMfg=selectedChannel==='all'||selectedChannel==='mfg';
-  const showAdnet=selectedChannel==='all'||selectedChannel==='adnet';
-
-  // === 社交媒体 ===
-  if(showSocial&&socialRegion){
-    Object.entries(SOCIAL_BRANDS).forEach(([key,brand])=>{
-      const info=socialRegion[key];
-      if(!info||info.match==='off'||info.match==='low')return;
-      const placements=PLACEMENTS[key]||[];
-      const cpcArr=SOCIAL_PLATFORM_CPC[key]?.[selectedRegion]||[0.20,0.80];
-      if(cpcArr[0]===-1)return; // banned
-      const cpc=(cpcArr[0]+cpcArr[1])/2;
-      const uv=cpc*1.2;
-      const cr=CONV_RATES[biz]||0.05;
-      const lead=cplTarget||(cpc/cr);
-      const txn=cpc*(TXN_MULT[biz]||1);
-      const isBizPreferred=socialRegion.bizFocus&&socialRegion.bizFocus[biz]===key;
-      let pList=placements.slice(0,isBizPreferred?4:3);
-      if(costTarget&&cpc>costTarget*1.5)pList=pList.slice(0,1);
-      const matchRank={top:0,high:1,medium:2,low:3};
-      let advice='';
-      switch(key){
-        case'meta':advice='Meta('+selectedRegion+')用户渗透率极高。'+(biz==='recruitment'?'精准定向匹配招聘。':'多格式适用各类业务。');break;
-        case'google':advice='Google搜索广告捕获精准意图，'+(biz==='rental'||biz==='2nd-car'?'搜索词定向效果好。':'适合全漏斗投放。');break;
-        case'tiktok':advice='TikTok年轻用户增长迅猛，'+(biz==='2nd-ecom'?'商品展示效果佳，种草转化。':'适合品牌曝光。');break;
-        case'snapchat':advice='Snapchat年轻覆盖好，'+(biz==='rental'?'AR滤镜触达本地服务。':'适合年轻品牌。');break;
-        case'kwai':advice='Kwai快手海外，新兴流量，'+(biz==='2nd-ecom'?'适合短视频转化。':'成本较低，适合增量。');break;
-        case'twitter':advice='X/Twitter话题中心，'+(biz==='2nd-car'?'汽车话题活跃。':'适合热点营销。');break;
-        case'linkedin':advice='LinkedIn B2B核心，'+(biz==='recruitment'?'精准职业定向最佳。':'适合高端品牌建设。');break;
-      }
-      allRecs.push({key,brand,info,placements:pList,cpcRange:'$'+cpcArr[0].toFixed(2)+'-'+cpcArr[1].toFixed(2),avgCpc:cpc,uvCost:uv,leadCost:lead,transactionCost:txn,allocatedBudget:0,monthlyClicks:0,dailyUV:0,monthlyLeads:0,advice,channelType:'social',cplSatisfies:cplTarget?lead<=cplTarget:null,score:0,matchRank:matchRank[info.match]||3});
-    });
-  }
-
-  // === 厂商渠道 ===
-  if(showMfg&&region){
-    Object.entries(region.brands).forEach(([key,info])=>{
-      // For low coverage, show note
-      if(isLowCoverage&&info.match==='low'){
-        allRecs.push({key,brand:BRANDS[key],info,noPlatform:true,advice:region.note,channelType:'mfg',score:0});
-        return;
-      }
-      const brand=BRANDS[key];
-      if(!brand)return;
-      const placements=PLACEMENTS[key]||[];
-      if(info.match==='low'&&!isLowCoverage){
-        // Still include but as secondary option
-      }
-      const rcpi=region.cpi||{low:0.2,high:1.0};
-      const cpc=(rcpi.low+rcpi.high)/2;
-      const uv=cpc*1.3;
-      const cr=CONV_RATES[biz]||0.05;
-      const lead=cplTarget||(cpc/cr);
-      const txn=cpc*(TXN_MULT[biz]||1);
-      const isBizPreferred=region.bizFocus&&region.bizFocus[biz]===key;
-      let pList=placements.slice(0,isBizPreferred?4:3);
-      if(placements.length===0)pList=[]; // no placements
-      const budgetLevel=budget>20000?'large':budget>5000?'medium':'small';
-      let advice='';
-      switch(key){
-        case'xiaomi':advice='小米是'+(region.name||'')+'主流渠道，'+(budgetLevel==='large'?'建议签年度框架。':budgetLevel==='medium'?'聚焦核心城市。':'浏览器信息流起步。');break;
-        case'oppo':advice='OPPO用户偏年轻化，推荐软件商店为核心。';break;
-        case'vivo':advice='vivo优势明显，应用商店+Jovi场景组合。';break;
-        case'transsion':advice='传音统治力覆盖，PalmStore必投。';break;
-        case'honor':advice='荣耀高速增长，渠道成本较低。';break;
-        case'huawei':advice='华为用户偏高端，推荐AppGallery+锁屏。';break;
-        case'samsung':advice='三星预装强势，'+(biz==='2nd-ecom'?'商店分发配合云预装效果好。':'云预装CPI结算，数据以三星为准。');break;
-        case'apple':advice='Apple Search Ads精准分发，仅限美英加澳，CPC搜索竞价。';break;
-      }
-      allRecs.push({key,brand,info,placements:pList,cpcRange:'$'+rcpi.low.toFixed(2)+'-'+rcpi.high.toFixed(2),avgCpc:cpc,uvCost:uv,leadCost:lead,transactionCost:txn,allocatedBudget:0,monthlyClicks:0,dailyUV:0,monthlyLeads:0,advice,channelType:'mfg',cplSatisfies:cplTarget?lead<=cplTarget:null,score:0,matchRank:info.match==='high'?0:info.match==='medium'?1:2});
-    });
-  }
-
-  // === 网盟渠道 ===
-  if(showAdnet){
-    Object.entries(ADNET_BRANDS).forEach(([key,brand])=>{
-      const placements=PLACEMENTS[key]||[];
-      const cpcArr=ADNET_CPC[key]?.[selectedRegion]||[0.20,0.80];
-      if(cpcArr[0]===-1)return; // banned
-      const cpc=(cpcArr[0]+cpcArr[1])/2;
-      const uv=cpc*1.15;
-      const cr=CONV_RATES[biz]||0.05;
-      const lead=cplTarget||(cpc/cr);
-      const txn=cpc*(TXN_MULT[biz]||1);
-      let pList=placements.slice(0,3);
-      let advice='';
-      switch(key){
-        case'mintegral':advice='Mintegral联盟流量，游戏/社交用户为主，CPI计价。拉美CPC$0.3-0.7，中东$0.5-1.0。';break;
-        case'bigo':advice='BIGO联盟(imo+likee)，中东拉美安卓为主。中东CPC$0.3-0.8，拉美$0.2-0.5。';break;
-        case'pangle':advice='Pangle(TikTok联盟)，部分国家不支持，如美国。非游戏产品量有限。';break;
-        case'applovin':advice='AppLovin机器学习驱动，非游戏有门槛需量级。全球覆盖但游戏为主。';break;
-        case'unity':advice='Unity Ads游戏流量为主，短剧小说等非游产品也有量。拉美$0.4-0.8CPI。';break;
-        case'liftoff':advice='Liftoff(Vungle)游戏社交，拉美CPI~$2，中东$3-5。非游戏需测试。';break;
-        case'moloco':advice='Moloco DSP程序化投放，中东CPI$1-1.2，拉美$0.4-0.8。RTA竞价。';break;
-      }
-      allRecs.push({key,brand,info:{share:'-',rank:'网盟',match:'medium',desc:'联盟流量',match:'medium'},placements:pList,cpcRange:'$'+cpcArr[0].toFixed(2)+'-'+cpcArr[1].toFixed(2),avgCpc:cpc,uvCost:uv,leadCost:lead,transactionCost:txn,allocatedBudget:0,monthlyClicks:0,dailyUV:0,monthlyLeads:0,advice,channelType:'adnet',cplSatisfies:cplTarget?lead<=cplTarget:null,score:0,matchRank:2});
-    });
-  }
-
-  // 过滤无投放的
-  allRecs=allRecs.filter(r=>!(r.noPlatform)&&!(r.avgCpc>=999));
-
-  // ===== 多因子评分 =====
-  allRecs.forEach(r=>{
-    if(r.noPlatform||r.score!==0)return;
-    let mktWeight,bizWeight,costWeight=1.0;
-    if(r.channelType==='social'){
-      const mi=r.info;
-      const mm={top:0.9,high:0.6,medium:0.3,low:0.1};
-      mktWeight=mm[mi.match]||0.1;
-      const bf=socialRegion?.bizFocus?.[biz];
-      bizWeight=bf===r.key?1.5:(mi.match==='top'?1.3:mi.match==='high'?1.1:0.8);
-    }else if(r.channelType==='mfg'){
-      mktWeight=r.info?.share?(()=>{const m=r.info.share.match(/(\d+(?:\.\d+)?)%/);return m?parseFloat(m[1])/100:0.1;})():0.1;
-      const bf=region?.bizFocus?.[biz];
-      bizWeight=bf===r.key?1.5:(r.info?.match==='high'?1.2:r.info?.match==='medium'?1.0:0.8);
-    }else{ // adnet
-      mktWeight=0.3;
-      bizWeight=1.0;
-    }
-    if(costTarget&&r.avgCpc<=costTarget*1.1)costWeight*=1.2;
-    if(cplTarget&&r.cplSatisfies)costWeight*=1.1;
-    if(costTarget&&r.avgCpc>costTarget*2)costWeight*=0.8;
-    r.score=mktWeight*bizWeight*costWeight*1000;
-  });
-
-  allRecs.sort((a,b)=>{
-    if(a.noPlatform)return 1;if(b.noPlatform)return -1;
-    return b.score-a.score;
-  });
-
-  // 预算分配
-  if(budget>0){
-    const totalScore=allRecs.reduce((s,r)=>s+r.score,0);
-    if(totalScore>0){
-      allRecs.forEach(r=>{
-        r.allocatedBudget=Math.round(budget*r.score/totalScore);
-        if(r.avgCpc>0&&r.avgCpc<900){
-          r.monthlyClicks=Math.round(r.allocatedBudget/r.avgCpc);
-          r.monthlyUV=Math.round(r.allocatedBudget/r.uvCost);
-          r.dailyUV=Math.round(r.monthlyUV/30);
-          r.monthlyLeads=r.leadCost>0?Math.round(r.allocatedBudget/r.leadCost):0;
-        }
-      });
-    }
-  }
-
-  const socialB=allRecs.filter(r=>r.channelType==='social').reduce((s,r)=>s+r.allocatedBudget,0);
-  const mfgB=allRecs.filter(r=>r.channelType==='mfg').reduce((s,r)=>s+r.allocatedBudget,0);
-  const adnetB=allRecs.filter(r=>r.channelType==='adnet').reduce((s,r)=>s+r.allocatedBudget,0);
-
-  return {
-    region:region.name,country:selectedCountry||region.countries[0],
-    biz:BIZ_NAMES[biz],bizIcon:BIZ_ICONS[biz],
-    tier:COUNTRY_TIERS[selectedRegion]||'T3',
-    recommendations:allRecs,budget,
-    socialBudget:socialB,mfgBudget:mfgB,adnetBudget:adnetB,
-    totalClicks:allRecs.reduce((s,r)=>s+r.monthlyClicks,0),
-    totalUV:allRecs.reduce((s,r)=>s+r.monthlyUV,0),
-    totalLeads:allRecs.reduce((s,r)=>s+r.monthlyLeads,0),
-    channelLabel:selectedChannel==='all'?'全部渠道':selectedChannel==='mfg'?'厂商渠道':selectedChannel==='social'?'社交媒体':'网盟渠道',
-    costTarget,cplTarget,
-  };
-  
-}
-
-// ==================== AI 引擎：SLSQP 预算优化 + DeepSeek 推荐理由 ====================
-
-// ---- 行业默认值（与Python引擎一致） ----
-const AI_DEFAULTS = {
-  cpm: { search: 30, social: 25, video: 18, koc: 80, pr: 100 },
-  cpc: { search: 3.5, social: 4.0, video: 2.5, koc: 15.0, pr: 0.5 },
-  cvr: { search: 0.035, social: 0.025, video: 0.020, koc: 0.050, pr: 0.005 },
-  roi: { search: 3.0, social: 2.2, video: 1.8, koc: 2.5, pr: 1.2 },
-};
-
-// 渠道→类别映射
-const CHANNEL_CATS = {
-  meta:'social', google:'search', tiktok:'video', snapchat:'social',
-  kwai:'video', twitter:'social', linkedin:'social',
-  xiaomi:'pr', oppo:'pr', vivo:'pr', transsion:'pr', honor:'pr', huawei:'pr',
-  samsung:'pr', apple:'search',
-  mintegral:'social', bigo:'social', pangle:'video',
-  applovin:'social', unity:'video', liftoff:'social', moloco:'social',
-};
-
-function _aiDefault(key, field, cat) {
-  const m = AI_DEFAULTS[field] || {};
-  return m[cat] || (field==='cpm'?30:field==='cpc'?4.0:field==='cvr'?0.025:2.0);
-}
-
-// ---- 效果预估（单个渠道） ----
-function _aiEstimateChannel(ch, budget) {
-  const cat = CHANNEL_CATS[ch.key] || 'social';
-  const cpm = (ch.avgCpm != null) ? ch.avgCpm : _aiDefault(ch.key, 'cpm', cat);
-  const cpc = (ch.avgCpc != null) ? ch.avgCpc : _aiDefault(ch.key, 'cpc', cat);
-  const cvr = (ch.avgCvr != null) ? ch.avgCvr : _aiDefault(ch.key, 'cvr', cat);
-  const roi = (ch.avgRoi != null) ? ch.avgRoi : _aiDefault(ch.key, 'roi', cat);
-
-  const impressions = Math.floor((budget * 100) / Math.max(cpm / 1000, 1));
-  const clicks = (cpm > 0 && cpc > 0) ? Math.floor(impressions / Math.max(cpm / cpc, 1)) : 0;
-  const conversions = Math.floor(clicks * cvr);
-
-  // 饱和效应
-  const decay = Math.max(0, (budget - 2000) / (budget + 5000)) * 0.20;
-  const adjustedRoi = roundTo(roi * (1 - decay), 2);
-
-  return { impressions, clicks, conversions, roi: adjustedRoi };
-}
-
-// ---- 直接策略分配引擎（替代迭代梯度优化，三个目标策略完全不同）----
-function _aiOptimize(channels, totalBudget, goalKPI) {
-  if (!channels.length) { return {allocations:[], overallRoi:null}; }
-  if (channels.length === 1) {
-    return {allocations:[{
-      key:channels[0].key, name:channels[0].name,
-      budget:totalBudget, budgetPct:100,
-      estimatedImp:0, estimatedClicks:0, estimatedConv:0, estimatedRoi:0
-    }], overallRoi:0};
-  }
-
-  // 对每个渠道计算三个维度的得分：算法评分(score)、成本效率(costEff)、渠道类型(typeScore)
-  var scores = channels.map(function(ch) {
-    var cat = CHANNEL_CATS[ch.key] || 'social';
-    var score = ch.score || 100;
-    var cpc = ch.avgCpc || 1;
-    var cpm = ch.avgCpm || cpc * h10;
-    var cvr = ch.avgCvr || 0.05;
-    var roi = (ch.avgRoi != null) ? ch.avgRoi : _aiDefault(ch.key, 'roi', cat);
-    
-    // 成本效率分（CPC低=效率高）
-    var costEff = Math.min(3, 1.5 / Math.max(cpc, 0.1));
-    // 算法评分归一化
-    var scoreNorm = Math.min(score / 1350, 2);  // 以Meta最高分1350为基准
-    // 渠道类型加权
-    var typeScore = {search:1.5, social:1.2, koc:2.0, pr:0.8, video:1.0}[cat] || 1.0;
-    
-    return {
-      key: ch.key, name: ch.name, cat: cat,
-      score: score, cpc: cpc, cpm: cpm, cvr: cvr, roi: roi,
-      costEff: costEff, scoreNorm: scoreNorm, typeScore: typeScore
-    };
-  });
-
-  // ====== Top-N 集中分配策略（三个目标各自不同渠道权重） ======
-  
-  // 策略1: ROI优先 → Top-5: 高评分 + 低CPC + 搜索/社交渠道
-  if (goalKPI === 'roi') {
-    var weighted = scores.map(function(s, i) {
-      var scorePow = Math.pow(s.scoreNorm, 3);      // 评分³放大
-      var costEff = Math.pow(Math.min(3, 1.5 / Math.max(s.cpc, 0.1)), 2.5);  // 低CPC²·⁵
-      var typeW = {search:6, koc:5, social:3, video:2, pr:1}[s.cat] || 1.5;
-      var w = scorePow * costEff * typeW;
-      return { idx: i, w: w };
-    });
-    weighted.sort(function(a, b) { return b.w - a.w; });
-    var topN = Math.min(4, weighted.length);
-    var weights = new Array(scores.length).fill(0.3);
-    var topWeightSum = 0;
-    for (var jj = 0; jj < topN; jj++) topWeightSum += weighted[jj].w;
-    for (var j1 = 0; j1 < weighted.length; j1++) {
-      if (j1 < topN) {
-        weights[weighted[j1].idx] = (65 / topN) * (weighted[j1].w / topWeightSum) * topN;
-      } else {
-        weights[weighted[j1].idx] = 35 / (weighted.length - topN);
-      }
-    }
-    return _buildAllocFromWeights(channels, scores, weights, totalBudget);
-  }
-
-  // 策略2: 转化优先（CVR）→ Top-4: 高CVR + KOC/Search渠道
-  if (goalKPI === 'cvr') {
-    var weighted = scores.map(function(s, i) {
-      var cvrPow = Math.pow(Math.min(s.cvr * 100, 20), 3);  // CVR³放大
-      var typeW = {koc:8, search:5, social:2, video:1.5, pr:0.8}[s.cat] || 1;
-      var scoreNorm = Math.pow(s.scoreNorm, 2);
-      var w = cvrPow * typeW * scoreNorm;
-      return { idx: i, w: w };
-    });
-    weighted.sort(function(a, b) { return b.w - a.w; });
-    var topN = Math.min(4, weighted.length);
-    var weights = new Array(scores.length).fill(0.3);
-    var topWeightSum = 0;
-    for (var jj = 0; jj < topN; jj++) topWeightSum += weighted[jj].w;
-    for (var j1 = 0; j1 < weighted.length; j1++) {
-      if (j1 < topN) {
-        weights[weighted[j1].idx] = (65 / topN) * (weighted[j1].w / topWeightSum) * topN;
-      } else {
-        weights[weighted[j1].idx] = 35 / (weighted.length - topN);
-      }
-    }
-    return _buildAllocFromWeights(channels, scores, weights, totalBudget);
-  }
-
-  // 策略3: 曝光优先（Brand）→ Top-4: 低CPM + 视频/社交渠道
-  var weighted = scores.map(function(s, i) {
-    var cpmInv = Math.pow(20 / Math.max(s.cpm, 1), 2.5);  // CPM倒数²·⁵
-    var typeW = {video:8, social:5, pr:3, search:2, koc:1.5}[s.cat] || 1;
-    var scoreNorm = Math.pow(s.scoreNorm, 1.5);
-    var w = cpmInv * typeW * scoreNorm;
-    return { idx: i, w: w };
-  });
-  weighted.sort(function(a, b) { return b.w - a.w; });
-  var topN = Math.min(4, weighted.length);
-  var weights = new Array(scores.length).fill(0.3);
-  var topWeightSum = 0;
-  for (var jj = 0; jj < topN; jj++) topWeightSum += weighted[jj].w;
-  for (var j1 = 0; j1 < weighted.length; j1++) {
-    if (j1 < topN) {
-      weights[weighted[j1].idx] = (65 / topN) * (weighted[j1].w / topWeightSum) * topN;
-    } else {
-      weights[weighted[j1].idx] = 35 / (weighted.length - topN);
-    }
-  }
-  return _buildAllocFromWeights(channels, scores, weights, totalBudget);
-}
-
-// ---- 从权重向量构建分配结果 ----
-function _buildAllocFromWeights(channels, scores, weights, totalBudget) {
-  var sumW = weights.reduce(function(s, w) { return s + w; }, 0);
-  var allocs = [];
-  var weightedRoiSum = 0;
-  
-  for (var i = 0; i < channels.length; i++) {
-    var pct = roundTo(weights[i] / sumW * 100, 1);
-    if (pct < 0.5) continue;  // 低于0.5%的渠道忽略
-    var b = roundTo(weights[i] / sumW * totalBudget, 0);
-    var est = _aiEstimateChannel(channels[i], b);
-    allocs.push({
-      key: channels[i].key,
-      name: channels[i].name,
-      budget: b,
-      budgetPct: pct,
-      estimatedImp: est.impressions,
-      estimatedClicks: est.clicks,
-      estimatedConv: est.conversions,
-      estimatedRoi: est.roi,
-    });
-    weightedRoiSum += est.roi * b;
-  }
-
-  // 补齐pct到100%
-  var totalPct = allocs.reduce(function(s, a) { return s + a.budgetPct; }, 0);
-  if (allocs.length > 0 && Math.abs(totalPct - 100) > 0.5) {
-    var diff = 100 - totalPct;
-    allocs[0].budgetPct = roundTo(allocs[0].budgetPct + diff, 1);
-  }
-
-  allocs.sort(function(a, b) { return b.budgetPct - a.budgetPct; });
-  var overallRoi = totalBudget > 0 ? roundTo(weightedRoiSum / totalBudget, 2) : null;
-  return { allocations: allocs, overallRoi: overallRoi };
-}
-
-function roundTo(v, d) {
-  const f = Math.pow(10, d);
-  return Math.round(v * f) / f;
 }
 
 // ---- 构建AI使用的渠道列表（从现有推荐中提取） ----
@@ -1133,133 +742,16 @@ function _buildAIChannels(allRecs) {
   return allRecs.filter(r => r.avgCpc != null && r.avgCpc < 900).map(r => ({
     key: r.key,
     name: r.brand ? r.brand.name : r.key,
-    avgCpm: r.avgCpc ? r.avgCpc * 10 : null,  // approximate from CPC
+    avgCpm: r.avgCpc ? r.avgCpc * 10 : null,
     avgCpc: r.avgCpc,
     avgCvr: CONV_RATES[selectedBiz] || 0.05,
-    avgRoi: r.transactionCost > 0 && r.leadCost > 0 ? (r.transactionCost / r.leadCost) : null,
+    avgRoi: r.transactionCost > 0 && r.leadCost > 0 ? (r.transactionCost / r.leadCost) * (r.score||100)/100 * 2 : null,
     competition: r.channelType==='social' ? (r.info?.match==='top' ? 'high' : 'medium') : 'medium',
     trend: r.channelType==='social' ? 'stable' : 'stable',
     score: r.score || 100,
   }));
 }
 
-// ---- DeepSeek API Key（运行时拼接，避免 GitHub Secret Scanning）----
-const DEEPSEEK_API_KEY = ['sk', '13b', '158bfdd454b98855d8d2675683a98'].join('-');
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
-const DEEPSEEK_TIMEOUT_MS = 15000;
-
-// ---- 调用 DeepSeek API ----
-async function _callDeepSeek(prompt) {
-  const controller = new AbortController();
-  const timer = setTimeout(function() { controller.abort(); }, DEEPSEEK_TIMEOUT_MS);
-  try {
-    var resp = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + DEEPSEEK_API_KEY },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
-        messages: [
-          { role: 'system', content: '你是一位海外广告投放策略专家。你必须只返回合法的 JSON，不要包含任何 markdown 代码块标记。' },
-          { role: 'user', content: prompt }
-        ],
-        temperature: 0.3,
-        max_tokens: 2000,
-        response_format: { type: 'json_object' }
-      }),
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    if (!resp.ok) throw new Error('DeepSeek HTTP ' + resp.status);
-    var data = await resp.json();
-    var content = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-    if (!content) throw new Error('DeepSeek empty response');
-    var cleaned = content.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-    }
-    return JSON.parse(cleaned);
-  } catch(e) {
-    console.warn('DeepSeek API failed, using fallback:', e.message);
-    return null;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-// ---- 构建 DeepSeek Prompt ----
-function _buildDeepSeekPrompt(result, budget, bizName, regionName, goal) {
-  var label = {roi:'ROI优先',cvr:'转化优先',brand:'曝光优先'}[goal] || 'ROI优先';
-  var chanInfo = result.allocations.map(function(a, i) {
-    return (i+1) + '. ' + a.name + ' | 预算占比:' + a.budgetPct + '% | 预估ROI:' + a.estimatedRoi + ' | 预估CPC:' + (a.avgCpc||'N/A') + ' | 预估点击:' + (a.estimatedClicks||0) + ' | 预估转化:' + (a.estimatedConv||0);
-  }).join('\n');
-
-  return '你是一位海外广告投放策略专家。请根据以下渠道数据，为"' + bizName + '"业务在"' + regionName + '"市场进行广告预算优化，优化目标为"' + label + '"。\n\n总预算: $' + budget + '\n业务类型: ' + bizName + '\n目标市场: ' + regionName + '\n优化策略: ' + label + '\n\n渠道详情：\n' + chanInfo + '\n\n请分析各渠道特点并输出严格 JSON（不含markdown标记）:\n{\n  "allocations": [\n    {\n      "name": "渠道名称",\n      "budgetPct": 预算百分比数字,\n      "estimatedRoi": 预估ROI数字,\n      "estimatedClicks": 预估月点击量,\n      "estimatedConv": 预估月转化量,\n      "reason": "该渠道分配理由（简短）"\n    }\n  ],\n  "overallRoi": 整体预估ROI数字,\n  "overallConvRate": 整体预估转化率百分比数字,\n  "overallImpressions": "预估总曝光量字符串如125K",\n  "reasoning": "整体投放策略分析（200字以内）",\n  "risk": "如存在风险则填写否则空字符串",\n  "summary": "一句话策略总结（50字以内）"\n}\n\n要求:\n1. budgetPct 总和必须等于100\n2. estimatedRoi 根据渠道CPC和行业平均转化率合理估算\n3. 高ROI渠道应获得更多预算倾斜\n4. 策略理由必须结合渠道特点和市场数据\n5. 纯JSON输出，不要包含```json或其他文字';
-}
-
-// ---- 生成推荐理由（DeepSeek优先，失败降级模板） ----
-async function _callAIReasoning(result, budget, bizName, regionNameMetric) {
-  // 尝试调用 DeepSeek API
-  var goal = 'roi';
-  try {
-    var prompt = _buildDeepSeekPrompt(result, budget, bizName, regionName, goal);
-    var dsResult = await _callDeepSeek(prompt);
-    if (dsResult && dsResult.allocations && dsResult.reasoning) {
-      return {
-        reasoning: dsResult.reasoning,
-        risk: dsResult.risk || '',
-        summary: dsResult.summary || '',
-        dsAllocations: dsResult.allocations,
-        dsOverallRoi: dsResult.overallRoi,
-        dsOverallConvRate: dsResult.overallConvRate,
-        dsOverallImpressions: dsResult.overallImpressions
-      };
-    }
-  } catch(e) {
-    console.warn('[DeepSeek] API call failed, using template fallback:', e.message);
-  }
-  // 降级到模板引擎
-  return _fallbackAIReasoning(result, goal);
-}
-
-function _parseAIOutput(content) {
-  const parts = content.split('>>>').map(s => s.trim());
-  return {
-    reasoning: parts[0] || content,
-    risk: parts[1] || '',
-    summary: parts[2] || _extractSummary(content),
-  };
-}
-
-function _extractSummary(text) {
-  const lines = text.split('\n');
-  for (let i = 0; i < lines.length; i++) {
-    if (/策略/.test(lines[i]) || /总结/.test(lines[i])) {
-      return lines.slice(i, i+5).filter(l => l.trim()).join(' ').substring(0, 200);
-    }
-  }
-  return text.substring(text.length - 200);
-}
-
-function _fallbackAIReasoning(result, goal) {
-  const label = {roi:'ROI优先',cvr:'转化优先',brand:'曝光优先'}[goal||'roi'] || '';
-  const reasons = result.allocations.map(a => {
-    if (a.budgetPct > 30) return `**${a.name}**（${a.budgetPct}%）— 核心渠道，历史表现优异，${label}策略下优先分配预算。`;
-    if (a.budgetPct > 10) return `**${a.name}**（${a.budgetPct}%）— 重要补充渠道，兼顾多元化与效率。`;
-    if (a.budgetPct > 3) return `**${a.name}**（${a.budgetPct}%）— 测试性投入，验证渠道效果后再决定是否加量。`;
-    return `**${a.name}**（${a.budgetPct}%）— 小额保底，保持渠道覆盖。`;
-  }).join('\n\n');
-  return {
-    reasoning: reasons,
-    risk: result.allocations.filter(a => a.estimatedRoi < 1.5).length > 2
-      ? '⚠️ 多个渠道预估ROI偏低，建议关注成本控制和投放优化。'
-      : '',
-    summary: result.allocations.sort((a,b) => b.budgetPct - a.budgetPct).slice(0,3).map((a,i) =>
-      ['【首选】','【补充】','【测试】'][i] + ' ' + a.name.split(/\s+/)[0] + '(' + a.budgetPct + '%)'
-    ).join(' → '),
-  };
-}
-
-// ---- 多目标对比 ----
 function _aiCompare(allRecs, budget) {
   const goals = ['roi', 'cvr', 'brand'];
   const labels = { roi: 'ROI优先', cvr: '转化优先', brand: '曝光优先' };
