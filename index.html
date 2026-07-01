@@ -787,7 +787,18 @@ function doGenerate(){
     return b.score-a.score;
   });
 
-  // 预算分配
+  // 按CPL效率排序 + 预算自适应裁剪 Top-N 渠道（先裁剪再分配）
+  allRecs.sort(function(a, b) {
+    var cplA = a.leadCost || 999;
+    var cplB = b.leadCost || 999;
+    var effA = (a.score || 100) / cplA;
+    var effB = (b.score || 100) / cplB;
+    return effB - effA;
+  });
+  var maxChannels = (typeof _getTopN === 'function') ? _getTopN(budget || 0) : 4;
+  allRecs = allRecs.slice(0, Math.min(maxChannels, allRecs.length));
+
+  // 预算分配（裁剪后在 Top-N 子集内按评分比例分配）
   if(budget>0){
     const totalScore=allRecs.reduce((s,r)=>s+r.score,0);
     if(totalScore>0){
@@ -806,17 +817,6 @@ function doGenerate(){
   const socialB=allRecs.filter(r=>r.channelType==='social').reduce((s,r)=>s+r.allocatedBudget,0);
   const mfgB=allRecs.filter(r=>r.channelType==='mfg').reduce((s,r)=>s+r.allocatedBudget,0);
   const adnetB=allRecs.filter(r=>r.channelType==='adnet').reduce((s,r)=>s+r.allocatedBudget,0);
-
-  // 按CPL效率排序 + 预算自适应裁剪 Top-N 渠道（避免小预算推太多渠道）
-  allRecs.sort(function(a, b) {
-    var cplA = a.leadCost || 999;
-    var cplB = b.leadCost || 999;
-    var effA = (a.score || 100) / cplA;
-    var effB = (b.score || 100) / cplB;
-    return effB - effA;
-  });
-  var maxChannels = (typeof _getTopN === 'function') ? _getTopN(budget || 0) : 4;
-  allRecs = allRecs.slice(0, Math.min(maxChannels, allRecs.length));
 
   return {
     region:region.name,country:selectedCountry||region.countries[0],
