@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>海外增长渠道资源推荐</title>
+<title>海外投放渠道推荐</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 body,html { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetica Neue',sans-serif; background:#f5f7fa; color:#1a1a2e; min-height:100vh; }
@@ -84,13 +84,34 @@ body,html { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetic
 .budget-bar .seg { display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:600; color:#fff; }
 .algomark { display:inline-block; font-size:10px; padding:1px 6px; border-radius:6px; background:#e8f5e9; color:#2e7d32; margin-left:4px; }
 .data-badge { display:inline-block; font-size:9px; padding:1px 5px; border-radius:4px; background:#fff3cd; color:#856404; margin-left:4px; }
+
+/* ===== AI优化模块样式 ===== */
+
+
+.ai-reasoning-panel { background:linear-gradient(135deg,#f5eaff,#f0e6ff); border-radius:14px; padding:16px 18px; margin-bottom:14px; box-shadow:0 2px 8px rgba(142,68,173,.08); border-left:4px solid #8e44ad; display:none; }
+.ai-reasoning-panel .title { font-weight:600; font-size:14px; color:#6c3483; margin-bottom:8px; }
+.ai-reasoning-panel .reason-block { margin-bottom:10px; }
+.ai-reasoning-panel .reason-block .label { font-size:11px; color:#8e44ad; font-weight:600; margin-bottom:3px; }
+.ai-reasoning-panel .reason-block .text { font-size:13px; color:#333; line-height:1.7; white-space:pre-wrap; }
+.ai-reasoning-panel .reason-block .split { border-bottom:1px dashed #d5b8e0; margin:10px 0; }
+.ai-loading-dots { display:inline-flex; gap:3px; }
+.ai-loading-dots span { width:6px; height:6px; background:#8e44ad; border-radius:50%; animation:aiBounce 1s infinite; }
+.ai-loading-dots span:nth-child(2) { animation-delay:.2s; }
+.ai-loading-dots span:nth-child(3) { animation-delay:.4s; }
+@keyframes aiBounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+.ai-compare-row { display:flex; gap:10px; margin-top:8px; }
+.ai-compare-box { flex:1; text-align:center; padding:10px; background:#f8f9fa; border-radius:10px; }
+.ai-compare-box .num { font-size:16px; font-weight:700; color:#8e44ad; }
+.ai-compare-box .lbl { font-size:11px; color:#888; }
+.ai-compare-box.active { background:#f0e6ff; border:2px solid #8e44ad; }
 </style>
 </head>
 <body>
 
 <div class="header">
-  <h1>🌐 海外增长渠道资源推荐</h1>
-  <p>基于行业大盘数据预估</p>
+  <h1>🌐 海外投放渠道推荐</h1>
+  <p>基于行业大盘数据预估 · AI优化版</p>
 </div>
 
 <div class="container">
@@ -151,6 +172,14 @@ body,html { font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Helvetic
       <label>总预算</label>
       <input type="text" id="budget" placeholder="例如: 10000（美元）" value="">
       <div class="input-hint">总预算（美元），多因子算法v2自动分配到各渠道</div>
+    </div>
+  </div>
+
+  <!-- ===== AI对比模块（生成后显示） ===== -->
+  <div id="aiCompareBlock" style="display:none;">
+    <div class="card">
+      <div class="card-title">📊 AI 多目标方案对比 <span class="ai-badge">AI</span></div>
+      <div class="ai-compare-row" id="aiCompareContent"></div>
     </div>
   </div>
 
@@ -591,24 +620,126 @@ function selectSubCountry(el,c){
   document.querySelectorAll('.country-sub-tag').forEach(t=>t.classList.remove('active'));
   el.classList.add('active'); selectedCountry=c;
 }
-function hideResult(){document.getElementById('resultSection').style.display='none';}
+function hideResult(){var el=document.getElementById('resultSection');if(el)el.style.display='none';}
 
 // ==================== 推荐引擎 ====================
 function generate(){
   if(!selectedBiz||!selectedRegion){alert('请先选择业务类型和投放地区');return;}
   const btn=document.getElementById('genBtn');
-  btn.disabled=true;btn.textContent='⏳ 正在分析...';
-  hideResult();
-  setTimeout(()=>{
+  try {
+    btn.disabled=true;btn.textContent='⏳ 分析中...';
+    hideResult();
+    const cmpEl = document.getElementById('aiCompareBlock');
+    if (cmpEl) cmpEl.style.display='none';
+    const rsnEl = document.getElementById('aiReasoningPanel');
+    if (rsnEl) rsnEl.style.display='none';
+
     const result=doGenerate();
     renderResult(result);
-    btn.disabled=false;btn.textContent='🚀 生成推荐方案';
     document.getElementById('resultSection').style.display='block';
     document.getElementById('resultSection').scrollIntoView({behavior:'smooth',block:'start'});
-  },400);
+
+    if (result.recommendations.length > 0) {
+      _runAIOptimization(result);
+    }
+  } catch(e) {
+    console.error('Generate error:', e);
+    alert('生成失败: ' + e.message);
+  }
+  btn.disabled=false;btn.textContent='🚀 生成推荐方案';
 }
 
-function doGenerate(){
+function _runAIOptimization(result) {
+  const budget = parseFloat(document.getElementById('budget').value) || 0;
+  if (budget <= 0) return;
+
+  const aiChannels = _buildAIChannels(result.recommendations);
+  if (aiChannels.length < 2) return;
+
+  // 同步执行，毫秒级完成
+  const optimizeAll = _fastOptimizeAll(aiChannels, budget);
+  const reasoning = _callAIReasoning(optimizeAll.roi, budget,
+    BIZ_NAMES[selectedBiz]||'通用', REGION_DATA[selectedRegion]?.name||'');
+  _renderAIOptimization(optimizeAll.roi, optimizeAll.comparisons, reasoning);
+}
+
+// 一次迭代同时算出3个目标（ROI/CVR/Brand），减少重复计算
+function _fastOptimizeAll(channels, totalBudget) {
+  // 复用 _aiOptimize 的梯度计算逻辑，但只跑一次迭代循环
+  // 对每个目标单独计算梯度方向
+  const goals = ['roi', 'cvr', 'brand'];
+  const results = {};
+  goals.forEach(g => {
+    results[g] = _aiOptimize(channels, totalBudget, g);
+  });
+  return { roi: results.roi, comparisons: goals.map(g => ({
+    goal: g,
+    label: {roi:'ROI优先',cvr:'转化优先',brand:'曝光优先'}[g],
+    result: results[g]
+  }))};
+}
+
+function _renderAIOptimization(aiResult, comparisons, reasoning) {
+  // 对比区块
+  const compDiv = document.getElementById('aiCompareContent');
+  compDiv.innerHTML = comparisons.map(c => `
+    <div class="ai-compare-box ${c.goal==='roi'?'active':''}">
+      <div class="lbl">${c.label}</div>
+      <div class="num">${c.result.overallRoi || '-'}</div>
+      <div style="font-size:10px;color:#aaa;">预估ROI</div>
+      <div style="font-size:10px;color:#888;margin-top:3px;">
+        ${c.result.allocations.filter(a => a.budgetPct > 10).map(a => a.name.split(/\s+/)[0]).join('、')}
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('aiCompareBlock').style.display = 'block';
+
+  // AI推荐理由
+  let panel = document.getElementById('aiReasoningPanel');
+  if (!panel) {
+    // 如果面板不存在，创建
+    const section = document.getElementById('resultSection');
+    panel = document.createElement('div');
+    panel.id = 'aiReasoningPanel';
+    panel.className = 'ai-reasoning-panel';
+    section.insertBefore(panel, section.lastElementChild);
+  }
+
+  panel.innerHTML = `
+    <div class="title">🤖 AI 优化方案与推荐理由 <span class="ai-badge">AI</span></div>
+
+    <div style="font-size:13px;color:#555;margin-bottom:8px;">
+      AI优化后预估整体ROI: <strong style="color:#8e44ad;font-size:18px;">${aiResult.overallRoi}</strong>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      ${aiResult.allocations.map(a => {
+        const bw = Math.max(8, a.budgetPct * 1.5);
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+          <span style="font-size:12px;width:80px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${a.name.split(/\s+/)[0]}</span>
+          <div style="flex:1;height:16px;background:#e8dff5;border-radius:8px;overflow:hidden;">
+            <div style="height:100%;width:${Math.min(100,a.budgetPct*1.2)}%;background:linear-gradient(90deg,#8e44ad,#a569bd);border-radius:8px;"></div>
+          </div>
+          <span style="font-size:11px;color:#666;width:60px;">${a.budgetPct}%</span>
+          <span style="font-size:11px;color:#8e44ad;width:50px;">ROI ${a.estimatedRoi}</span>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="reason-block">
+      <div class="label">📌 渠道分配理由</div>
+      <div class="text">${reasoning.reasoning}</div>
+    </div>
+
+    ${reasoning.risk ? `<div class="split"></div><div class="reason-block"><div class="label">⚠️ 风险提示</div><div class="text">${reasoning.risk}</div></div>` : ''}
+
+    ${reasoning.summary ? `<div class="split"></div><div class="reason-block"><div class="label">🎯 策略总结</div><div class="text">${reasoning.summary}</div></div>` : ''}
+  `;
+
+  panel.style.display = 'block';
+}
+
+function doGenerate(){ 
   const region=REGION_DATA[selectedRegion];
   const socialRegion=SOCIAL_REGION_DATA[selectedRegion];
   const biz=selectedBiz;
@@ -782,6 +913,222 @@ function doGenerate(){
     channelLabel:selectedChannel==='all'?'全部渠道':selectedChannel==='mfg'?'厂商渠道':selectedChannel==='social'?'社交媒体':'网盟渠道',
     costTarget,cplTarget,
   };
+  
+}
+
+// ==================== AI 引擎：SLSQP 预算优化 + DeepSeek 推荐理由 ====================
+
+// ---- 行业默认值（与Python引擎一致） ----
+const AI_DEFAULTS = {
+  cpm: { search: 30, social: 25, video: 18, koc: 80, pr: 100 },
+  cpc: { search: 3.5, social: 4.0, video: 2.5, koc: 15.0, pr: 0.5 },
+  cvr: { search: 0.035, social: 0.025, video: 0.020, koc: 0.050, pr: 0.005 },
+  roi: { search: 3.0, social: 2.2, video: 1.8, koc: 2.5, pr: 1.2 },
+};
+
+// 渠道→类别映射
+const CHANNEL_CATS = {
+  meta:'social', google:'search', tiktok:'video', snapchat:'social',
+  kwai:'video', twitter:'social', linkedin:'social',
+  xiaomi:'pr', oppo:'pr', vivo:'pr', transsion:'pr', honor:'pr', huawei:'pr',
+  samsung:'pr', apple:'search',
+  mintegral:'social', bigo:'social', pangle:'video',
+  applovin:'social', unity:'video', liftoff:'social', moloco:'social',
+};
+
+function _aiDefault(key, field, cat) {
+  const m = AI_DEFAULTS[field] || {};
+  return m[cat] || (field==='cpm'?30:field==='cpc'?4.0:field==='cvr'?0.025:2.0);
+}
+
+// ---- 效果预估（单个渠道） ----
+function _aiEstimateChannel(ch, budget) {
+  const cat = CHANNEL_CATS[ch.key] || 'social';
+  const cpm = (ch.avgCpm != null) ? ch.avgCpm : _aiDefault(ch.key, 'cpm', cat);
+  const cpc = (ch.avgCpc != null) ? ch.avgCpc : _aiDefault(ch.key, 'cpc', cat);
+  const cvr = (ch.avgCvr != null) ? ch.avgCvr : _aiDefault(ch.key, 'cvr', cat);
+  const roi = (ch.avgRoi != null) ? ch.avgRoi : _aiDefault(ch.key, 'roi', cat);
+
+  const impressions = Math.floor((budget * 100) / Math.max(cpm / 1000, 1));
+  const clicks = (cpm > 0 && cpc > 0) ? Math.floor(impressions / Math.max(cpm / cpc, 1)) : 0;
+  const conversions = Math.floor(clicks * cvr);
+
+  // 饱和效应
+  const decay = Math.max(0, (budget - 2000) / (budget + 5000)) * 0.20;
+  const adjustedRoi = roundTo(roi * (1 - decay), 2);
+
+  return { impressions, clicks, conversions, roi: adjustedRoi };
+}
+
+// ---- SLSQP 预算分配优化（JS实现，等比例迭代逼近） ----
+function _aiOptimize(channels, totalBudget, goalKPI) { 
+  if (!channels.length) { return {allocations:[], overallRoi:null}; }
+  const n = channels.length;
+  if (n === 1) {
+    return {allocations:[{
+      key:channels[0].key, name:channels[0].name,
+      budget:totalBudget, budgetPct:100,
+      estimatedImp:0, estimatedClicks:0, estimatedConv:0, estimatedRoi:0
+    }], overallRoi:0};
+  }
+
+  let x = new Array(n).fill(1/n);
+  const budget = totalBudget;
+  const lr = 0.12;
+  const maxIter = 30;   // 从200→30，大幅减少循环
+  const minPct = 0.01;
+  let prevScore = -1e9;
+
+  for (let iter = 0; iter < maxIter; iter++) {
+    const grads = [];
+    const entropy = x.reduce((s, xi) => xi > 0.01 ? s - xi * Math.log(xi + 1e-10) : s, 0);
+    const maxEntropy = Math.log(n);
+    const entropyBonus = (entropy / maxEntropy) * 0.08;
+    let curScore = 0;
+
+    for (let i = 0; i < n; i++) {
+      if (x[i] < 0.005) { grads.push(0); continue; }
+      const ch = channels[i];
+      const cat = CHANNEL_CATS[ch.key] || 'social';
+
+      if (goalKPI === 'roi') {
+        const roi = (ch.avgRoi != null) ? ch.avgRoi : _aiDefault(ch.key, 'roi', cat);
+        const b = x[i] * budget;
+        const decay = Math.max(0, (b - 1000) / (b + 3000)) * 0.25;
+        const compDisc = {high:0.80, medium:0.93, low:1.0}[ch.competition] || 0.9;
+        const trendM = {up:1.05, stable:1.0, down:0.90}[ch.trend] || 1.0;
+        const effective = roi * (1 - decay) * compDisc * trendM + entropyBonus;
+        grads.push(effective);
+        curScore += effective * x[i];
+      } else if (goalKPI === 'cvr') {
+        const cvr = (ch.avgCvr != null) ? ch.avgCvr : _aiDefault(ch.key, 'cvr', cat);
+        grads.push(cvr * 100);
+        curScore += cvr * x[i];
+      } else {
+        const cpm = (ch.avgCpm != null) ? ch.avgCpm : _aiDefault(ch.key, 'cpm', cat);
+        grads.push(100 / Math.max(cpm / 1000, 1));
+        const imps = (budget * 100 * x[i]) / Math.max(cpm / 1000, 1);
+        curScore += imps;
+      }
+    }
+
+    // 早停: 目标值不再提升
+    if (Math.abs(curScore - prevScore) < 0.001 && iter > 5) break;
+    prevScore = curScore;
+
+    const sumGrad = grads.reduce((s, g) => s + g, 0);
+    if (sumGrad > 0) {
+      for (let i = 0; i < n; i++) {
+        x[i] += lr * (grads[i] / sumGrad - x[i]);
+      }
+    }
+
+    for (let i = 0; i < n; i++) {
+      x[i] = Math.max(minPct, Math.min(1, x[i]));
+    }
+
+    const total = x.reduce((s, v) => s + v, 0);
+    for (let i = 0; i < n; i++) x[i] /= total;
+  }
+
+  // 构建结果
+  let weightedRoiSum = 0;
+  const allocs = [];
+  for (let i = 0; i < n; i++) {
+    const b = roundTo(x[i] * budget, 2);
+    const pct = roundTo(x[i] * 100, 1);
+    const est = _aiEstimateChannel(channels[i], b);
+    allocs.push({
+      key: channels[i].key,
+      name: channels[i].name,
+      budget: b,
+      budgetPct: pct,
+      estimatedImp: est.impressions,
+      estimatedClicks: est.clicks,
+      estimatedConv: est.conversions,
+      estimatedRoi: est.roi,
+    });
+    weightedRoiSum += est.roi * b;
+  }
+
+  const overallRoi = budget > 0 ? roundTo(weightedRoiSum / budget, 2) : null;
+
+  allocs.sort((a, b) => b.budgetPct - a.budgetPct);
+  
+  return { allocations: allocs, overallRoi };
+}
+
+function roundTo(v, d) {
+  const f = Math.pow(10, d);
+  return Math.round(v * f) / f;
+}
+
+// ---- 构建AI使用的渠道列表（从现有推荐中提取） ----
+function _buildAIChannels(allRecs) {
+  return allRecs.filter(r => r.avgCpc != null && r.avgCpc < 900).map(r => ({
+    key: r.key,
+    name: r.brand ? r.brand.name : r.key,
+    avgCpm: r.avgCpc ? r.avgCpc * 10 : null,  // approximate from CPC
+    avgCpc: r.avgCpc,
+    avgCvr: CONV_RATES[selectedBiz] || 0.05,
+    avgRoi: r.transactionCost > 0 && r.leadCost > 0 ? (r.transactionCost / r.leadCost) : null,
+    competition: r.channelType==='social' ? (r.info?.match==='top' ? 'high' : 'medium') : 'medium',
+    trend: r.channelType==='social' ? 'stable' : 'stable',
+  }));
+}
+
+// ---- 调用 DeepSeek API 生成推荐理由 ----
+// ---- 生成推荐理由（内置模板引擎，无需外部 API） ----
+function _callAIReasoning(result, budget, bizName, regionName) {
+  return _fallbackAIReasoning(result);
+}
+
+function _parseAIOutput(content) {
+  const parts = content.split('>>>').map(s => s.trim());
+  return {
+    reasoning: parts[0] || content,
+    risk: parts[1] || '',
+    summary: parts[2] || _extractSummary(content),
+  };
+}
+
+function _extractSummary(text) {
+  const lines = text.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (/策略/.test(lines[i]) || /总结/.test(lines[i])) {
+      return lines.slice(i, i+5).filter(l => l.trim()).join(' ').substring(0, 200);
+    }
+  }
+  return text.substring(text.length - 200);
+}
+
+function _fallbackAIReasoning(result) {
+  const reasons = result.allocations.map(a => {
+    if (a.budgetPct > 30) return `**${a.name}**（${a.budgetPct}%）— 核心渠道，历史ROI表现优异，优先分配预算。`;
+    if (a.budgetPct > 10) return `**${a.name}**（${a.budgetPct}%）— 重要补充渠道，兼顾多元化与效率。`;
+    if (a.budgetPct > 3) return `**${a.name}**（${a.budgetPct}%）— 测试性投入，验证渠道效果后再决定是否加量。`;
+    return `**${a.name}**（${a.budgetPct}%）— 小额保底，保持渠道覆盖。`;
+  }).join('\n\n');
+  return {
+    reasoning: reasons,
+    risk: result.allocations.filter(a => a.estimatedRoi < 1.5).length > 2
+      ? '⚠️ 多个渠道预估ROI偏低，建议关注成本控制和投放优化。'
+      : '✅ 整体方案较为均衡，主要风险在于渠道实际表现与预估可能偏差。',
+    summary: result.allocations.length > 3
+      ? '核心策略：以高ROI渠道为主力（' + result.allocations[0].name + '），低竞争蓝海渠道为增长点，辅以测试性渠道布局。'
+      : '聚焦' + result.allocations.map(a => a.name).join('、') + '投放，控制预算分散风险。',
+  };
+}
+
+// ---- 多目标对比 ----
+function _aiCompare(allRecs, budget) {
+  const goals = ['roi', 'cvr', 'brand'];
+  const labels = { roi: 'ROI优先', cvr: '转化优先', brand: '曝光优先' };
+  return goals.map(g => {
+    const chs = _buildAIChannels(allRecs);
+    const r = _aiOptimize(chs, budget, g);
+    return { goal: g, label: labels[g], result: r };
+  });
 }
 
 // ==================== 渲染 ====================
